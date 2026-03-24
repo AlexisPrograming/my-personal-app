@@ -476,7 +476,12 @@ function AuthScreen({ onBack, initialMode = 'signup' }) {
         if (signInErr) throw signInErr;
       }
     } catch (e) {
-      setError(e.message || 'Something went wrong.');
+      const msg = e.message || '';
+      if (msg.toLowerCase().includes('password') && msg.toLowerCase().includes('breach')) {
+        setError('This password has been found in a known data breach. Please choose a different password.');
+      } else {
+        setError(msg || 'Something went wrong.');
+      }
     } finally { setLoading(false); }
   };
 
