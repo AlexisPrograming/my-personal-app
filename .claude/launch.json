@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Expo Web",
+      "runtimeExecutable": "C:/Program Files/nodejs/node.exe",
+      "runtimeArgs": ["C:/Users/alexi/pulse-start.js"],
+      "port": 8081
+    }
+  ]
+}

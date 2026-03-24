@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(cmd /c \"where npx\")",
+      "Bash(cmd /c \"where node\")",
+      "Bash(node -e \"const { execSync } = require\\(''child_process''\\); console.log\\(execSync\\(''where npx.cmd''\\).toString\\(\\).trim\\(\\)\\)\")",
+      "Bash(node -e \"const {execSync}=require\\(''''child_process''''\\); console.log\\(execSync\\(''''where node.exe''''\\).toString\\(\\).trim\\(\\)\\)\")",
+      "Bash(node -e \"const{execSync}=require\\(''''child_process''''\\);console.log\\(execSync\\(''''where.exe expo.cmd'''',{cwd:''''D:/my personal app''''}\\).toString\\(\\).trim\\(\\)\\)\")",
+      "Bash(node -e \"const{execSync}=require\\(''child_process''\\);console.log\\(execSync\\(''cmd /c for %I in \\(\"\"D:\\\\\\\\my personal app\"\"\\) do echo %~sI''\\).toString\\(\\).trim\\(\\)\\)\")",
+      "Bash(node -e \":*)",
+      "Bash(cmd /c \"dir /X \"\"D:\"\")",
+      "Bash(powershell -Command \"\\(New-Object -ComObject Scripting.FileSystemObject\\).GetFolder\\(''D:\\\\my personal app''\\).ShortPath\")",
+      "Bash(echo $USERPROFILE)",
+      "Read(//c/Users/alexi/**)",
+      "mcp__34ae4f8b-4fde-460d-922b-7eef28b1d3c9__list_projects",
+      "mcp__34ae4f8b-4fde-460d-922b-7eef28b1d3c9__list_tables",
+      "mcp__34ae4f8b-4fde-460d-922b-7eef28b1d3c9__get_project_url",
+      "mcp__34ae4f8b-4fde-460d-922b-7eef28b1d3c9__get_publishable_keys",
+      "mcp__34ae4f8b-4fde-460d-922b-7eef28b1d3c9__apply_migration"
+    ]
+  }
+}
