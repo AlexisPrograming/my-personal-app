@@ -15,7 +15,6 @@ const { width: W } = Dimensions.get('window');
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const DESKTOP_BP = 768;
 function useIsDesktop() { const { width } = useWindowDimensions(); return width >= DESKTOP_BP; }
-function useContentWidth() { const { width } = useWindowDimensions(); return width >= DESKTOP_BP ? Math.min(width - 280, 900) : width; }
 
 // ─── THEME ──────────────────────────────────────────────────────────────────
 const C = {
