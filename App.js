@@ -408,12 +408,20 @@ function AuthScreen({ onBack, initialMode = 'signup' }) {
     setLoading(true);
     try {
       if (mode === 'signup') {
-        const { data, error: signUpErr } = await supabase.auth.signUp({ email: email.trim(), password });
+        const { data, error: signUpErr } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: { data: { username: username.trim() } },
+        });
         if (signUpErr) throw signUpErr;
-        if (data.user) {
-          const { error: profileErr } = await supabase.from('profiles').insert({
+        if (data.user && !data.session) {
+          setError('Check your email and confirm your account before signing in.');
+          return;
+        }
+        if (data.user && data.session) {
+          const { error: profileErr } = await supabase.from('profiles').upsert({
             id: data.user.id, username: username.trim(), profile_complete: false,
-          });
+          }, { onConflict: 'id' });
           if (profileErr && profileErr.code !== '23505') throw profileErr;
         }
       } else {
