@@ -18,7 +18,8 @@
       "mcp__34ae4f8b-4fde-460d-922b-7eef28b1d3c9__list_tables",
       "mcp__34ae4f8b-4fde-460d-922b-7eef28b1d3c9__get_project_url",
       "mcp__34ae4f8b-4fde-460d-922b-7eef28b1d3c9__get_publishable_keys",
-      "mcp__34ae4f8b-4fde-460d-922b-7eef28b1d3c9__apply_migration"
+      "mcp__34ae4f8b-4fde-460d-922b-7eef28b1d3c9__apply_migration",
+      "Bash(npx vercel:*)"
     ]
   }
 }

@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   SafeAreaView, View, Text, TouchableOpacity, TextInput,
-  ScrollView, Modal, Animated, Dimensions,
+  ScrollView, Modal, Animated, Dimensions, useWindowDimensions,
   KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Easing,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -13,6 +13,9 @@ import { supabase } from './supabaseConfig';
 
 const { width: W } = Dimensions.get('window');
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const DESKTOP_BP = 768;
+function useIsDesktop() { const { width } = useWindowDimensions(); return width >= DESKTOP_BP; }
+function useContentWidth() { const { width } = useWindowDimensions(); return width >= DESKTOP_BP ? Math.min(width - 280, 900) : width; }
 
 // ─── THEME ──────────────────────────────────────────────────────────────────
 const C = {
@@ -329,13 +332,15 @@ function StreakBadge({ streak }) {
 }
 
 function WeightChart({ weights }) {
+  const { width } = useWindowDimensions();
   if (!weights || weights.length < 2) {
     return <View style={{ height: 80, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: C.dim, fontSize: 12 }}>Log at least 2 weigh-ins to see a trend</Text></View>;
   }
   const vals   = weights.map(w => w.weight_kg);
   const min    = Math.min(...vals) - 1;
   const max    = Math.max(...vals) + 1;
-  const chartH = 70, chartW = W - 80;
+  const containerW = width >= DESKTOP_BP ? Math.min(width - 280, 900) : width;
+  const chartH = 70, chartW = containerW - 80;
   const ptX    = (i) => (i / (vals.length - 1)) * chartW;
   const ptY    = (v) => chartH - ((v - min) / (max - min)) * chartH;
   const points = vals.map((v, i) => ({ x: ptX(i), y: ptY(v) }));
@@ -357,6 +362,7 @@ function WeightChart({ weights }) {
 
 // ─── WELCOME SCREEN ───────────────────────────────────────────────────────────
 function WelcomeScreen({ onGetStarted, onSignIn }) {
+  const isDesktop = useIsDesktop();
   const glow  = useRef(new Animated.Value(0)).current;
   const fade  = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(40)).current;
@@ -370,12 +376,54 @@ function WelcomeScreen({ onGetStarted, onSignIn }) {
       Animated.timing(glow, { toValue: 0, duration: 2000, useNativeDriver: false }),
     ])).start();
   }, []);
-  const glowSize = glow.interpolate({ inputRange: [0, 1], outputRange: [180, 240] });
-  const glowOpa  = glow.interpolate({ inputRange: [0, 1], outputRange: [0.15, 0.35] });
+  const glowSize = glow.interpolate({ inputRange: [0, 1], outputRange: [280, 400] });
+  const glowOpa  = glow.interpolate({ inputRange: [0, 1], outputRange: [0.12, 0.28] });
+
+  if (isDesktop) {
+    return (
+      <View style={{ flex: 1, backgroundColor: C.bg, flexDirection: 'row' }}>
+        {/* Left panel */}
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 60 }}>
+          <Animated.View style={{ position: 'absolute', width: glowSize, height: glowSize, borderRadius: 999, backgroundColor: C.purple, opacity: glowOpa }} />
+          <Animated.View style={{ alignItems: 'center', opacity: fade, transform: [{ translateY: slide }] }}>
+            <View style={{ width: 88, height: 88, borderRadius: 26, backgroundColor: C.card, borderWidth: 1, borderColor: C.borderBright, alignItems: 'center', justifyContent: 'center', marginBottom: 28 }}>
+              <Text style={{ fontSize: 42 }}>⚡</Text>
+            </View>
+            <Text style={{ color: C.text, fontSize: 64, fontWeight: '800', letterSpacing: -2 }}>PULSE</Text>
+            <Text style={{ color: C.purple, fontSize: 14, letterSpacing: 5, marginTop: 6 }}>HEALTH COACH</Text>
+            <Text style={{ color: C.muted, fontSize: 17, textAlign: 'center', marginTop: 24, lineHeight: 28, maxWidth: 360 }}>Your intelligent fitness companion.{'\n'}Track nutrition, training, and progress.{'\n'}Built for results.</Text>
+            <View style={{ flexDirection: 'row', gap: 16, marginTop: 40 }}>
+              {[{ icon: '◈', label: 'Smart Macros' }, { icon: '△', label: 'Training Logs' }, { icon: '⚡', label: 'AI Coaching' }].map(f => (
+                <View key={f.label} style={{ alignItems: 'center', backgroundColor: C.card, borderRadius: 14, padding: 18, borderWidth: 1, borderColor: C.border, minWidth: 100 }}>
+                  <Text style={{ fontSize: 22, color: C.purple, marginBottom: 6 }}>{f.icon}</Text>
+                  <Text style={{ color: C.muted, fontSize: 12 }}>{f.label}</Text>
+                </View>
+              ))}
+            </View>
+          </Animated.View>
+        </View>
+        {/* Right panel - auth card */}
+        <View style={{ width: 440, backgroundColor: C.surface, borderLeftWidth: 1, borderLeftColor: C.border, alignItems: 'center', justifyContent: 'center', padding: 48 }}>
+          <Animated.View style={{ width: '100%', opacity: fade, transform: [{ translateY: slide }] }}>
+            <Text style={{ color: C.text, fontSize: 28, fontWeight: '800', marginBottom: 6 }}>Get started</Text>
+            <Text style={{ color: C.muted, fontSize: 14, marginBottom: 36 }}>Start your transformation today.</Text>
+            <View style={{ gap: 12 }}>
+              <Btn label="Create Account" onPress={onGetStarted} />
+              <Btn label="Sign In" onPress={onSignIn} variant="secondary" />
+            </View>
+            <Text style={{ color: C.dim, fontSize: 12, textAlign: 'center', marginTop: 28 }}>
+              Personalized nutrition & training plans{'\n'}powered by your body data.
+            </Text>
+          </Animated.View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
       <Animated.View style={{ position: 'absolute', top: '25%', width: glowSize, height: glowSize, borderRadius: 999, backgroundColor: C.purple, opacity: glowOpa, transform: [{ translateY: -60 }] }} />
-      <Animated.View style={{ alignItems: 'center', opacity: fade, transform: [{ translateY: slide }] }}>
+      <Animated.View style={{ alignItems: 'center', opacity: fade, transform: [{ translateY: slide }], width: '100%' }}>
         <View style={{ width: 72, height: 72, borderRadius: 22, backgroundColor: C.card, borderWidth: 1, borderColor: C.borderBright, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
           <Text style={{ fontSize: 34 }}>⚡</Text>
         </View>
@@ -433,37 +481,54 @@ function AuthScreen({ onBack, initialMode = 'signup' }) {
     } finally { setLoading(false); }
   };
 
+  const isDesktop = useIsDesktop();
+  const formContent = (
+    <>
+      <TouchableOpacity onPress={onBack} style={{ marginBottom: 28 }}>
+        <Text style={{ color: C.muted, fontSize: 14 }}>← Back</Text>
+      </TouchableOpacity>
+      <Text style={{ color: C.text, fontSize: 28, fontWeight: '800', marginBottom: 6 }}>{mode === 'signup' ? 'Create account' : 'Welcome back'}</Text>
+      <Text style={{ color: C.muted, fontSize: 14, marginBottom: 28 }}>{mode === 'signup' ? 'Start your transformation today.' : 'Continue your journey.'}</Text>
+      <View style={{ flexDirection: 'row', backgroundColor: C.card, borderRadius: 10, padding: 4, marginBottom: 24 }}>
+        {['signup', 'signin'].map(m => (
+          <TouchableOpacity key={m} onPress={() => setMode(m)} style={{ flex: 1, paddingVertical: 9, borderRadius: 8, alignItems: 'center', backgroundColor: mode === m ? C.purple : 'transparent' }}>
+            <Text style={{ color: mode === m ? '#fff' : C.dim, fontWeight: '600', fontSize: 13 }}>{m === 'signup' ? 'Sign Up' : 'Sign In'}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      {mode === 'signup' && (
+        <View style={{ marginBottom: 14 }}>
+          <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Username</Text>
+          <TextInput style={styles.input} value={username} onChangeText={setUsername} autoCapitalize="none" placeholder="e.g. alexfit" placeholderTextColor={C.dim} />
+        </View>
+      )}
+      <View style={{ marginBottom: 14 }}>
+        <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Email</Text>
+        <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" placeholderTextColor={C.dim} />
+      </View>
+      <View style={{ marginBottom: 24 }}>
+        <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Password</Text>
+        <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry placeholder="Min. 6 characters" placeholderTextColor={C.dim} />
+      </View>
+      {error ? <Text style={{ color: C.red, fontSize: 13, marginBottom: 16, textAlign: 'center' }}>{error}</Text> : null}
+      <Btn label={mode === 'signup' ? 'Create Account' : 'Sign In'} onPress={submit} loading={loading} />
+    </>
+  );
+
+  if (isDesktop) {
+    return (
+      <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: 460, backgroundColor: C.surface, borderRadius: 20, borderWidth: 1, borderColor: C.border, padding: 40 }}>
+          {formContent}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 28, paddingTop: 60 }}>
-        <TouchableOpacity onPress={onBack} style={{ marginBottom: 32 }}>
-          <Text style={{ color: C.muted, fontSize: 14 }}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={{ color: C.text, fontSize: 28, fontWeight: '800', marginBottom: 6 }}>{mode === 'signup' ? 'Create account' : 'Welcome back'}</Text>
-        <Text style={{ color: C.muted, fontSize: 14, marginBottom: 32 }}>{mode === 'signup' ? 'Start your transformation today.' : 'Continue your journey.'}</Text>
-        <View style={{ flexDirection: 'row', backgroundColor: C.card, borderRadius: 10, padding: 4, marginBottom: 28 }}>
-          {['signup', 'signin'].map(m => (
-            <TouchableOpacity key={m} onPress={() => setMode(m)} style={{ flex: 1, paddingVertical: 9, borderRadius: 8, alignItems: 'center', backgroundColor: mode === m ? C.purple : 'transparent' }}>
-              <Text style={{ color: mode === m ? '#fff' : C.dim, fontWeight: '600', fontSize: 13 }}>{m === 'signup' ? 'Sign Up' : 'Sign In'}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        {mode === 'signup' && (
-          <View style={{ marginBottom: 14 }}>
-            <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Username</Text>
-            <TextInput style={styles.input} value={username} onChangeText={setUsername} autoCapitalize="none" placeholder="e.g. alexfit" placeholderTextColor={C.dim} />
-          </View>
-        )}
-        <View style={{ marginBottom: 14 }}>
-          <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Email</Text>
-          <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" placeholderTextColor={C.dim} />
-        </View>
-        <View style={{ marginBottom: 24 }}>
-          <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Password</Text>
-          <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry placeholder="Min. 6 characters" placeholderTextColor={C.dim} />
-        </View>
-        {error ? <Text style={{ color: C.red, fontSize: 13, marginBottom: 16, textAlign: 'center' }}>{error}</Text> : null}
-        <Btn label={mode === 'signup' ? 'Create Account' : 'Sign In'} onPress={submit} loading={loading} />
+        {formContent}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -519,17 +584,22 @@ function SetupScreen({ onComplete, userId }) {
 
   const STEPS = ['Goal', 'Body', 'Training', 'Preferences'];
 
+  const isDesktop = useIsDesktop();
+  const maxW = isDesktop ? 640 : undefined;
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <View style={{ paddingTop: 56, paddingHorizontal: 24, paddingBottom: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+      <View style={{ paddingTop: isDesktop ? 32 : 56, paddingHorizontal: 24, paddingBottom: 16, alignItems: isDesktop ? 'center' : undefined }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 24, width: '100%', maxWidth: maxW, alignSelf: isDesktop ? 'center' : undefined }}>
           {STEPS.map((_, i) => <View key={i} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: i <= step ? C.purple : C.subtle }} />)}
         </View>
-        <Text style={{ color: C.dim, fontSize: 12, letterSpacing: 1.5 }}>STEP {step + 1} OF {STEPS.length}</Text>
-        <Text style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{STEPS[step]}</Text>
+        <View style={{ maxWidth: maxW, alignSelf: isDesktop ? 'center' : undefined, width: '100%' }}>
+          <Text style={{ color: C.dim, fontSize: 12, letterSpacing: 1.5 }}>STEP {step + 1} OF {STEPS.length}</Text>
+          <Text style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{STEPS[step]}</Text>
+        </View>
       </View>
 
-      <Animated.ScrollView style={{ flex: 1, transform: [{ translateX: slideAnim }] }} contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <Animated.ScrollView style={{ flex: 1, transform: [{ translateX: slideAnim }] }} contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40, alignItems: isDesktop ? 'center' : undefined }} keyboardShouldPersistTaps="handled">
+      <View style={{ width: '100%', maxWidth: maxW }}>
 
         {step === 0 && (
           <View>
@@ -625,6 +695,7 @@ function SetupScreen({ onComplete, userId }) {
             ? <Btn label="Continue →" onPress={goNext} style={{ flex: 2 }} />
             : <Btn label="Build My Plan →" onPress={finish} loading={saving} style={{ flex: 2 }} />}
         </View>
+      </View>
       </Animated.ScrollView>
     </View>
   );
@@ -633,12 +704,14 @@ function SetupScreen({ onComplete, userId }) {
 // ─── TODAY TAB ────────────────────────────────────────────────────────────────
 function TodayTab({ profile, macros, today, onAddWater, onResetWater, streak }) {
   const quote      = useRef(randomFrom(QUOTES)).current;
+  const isDesktop  = useIsDesktop();
   const consumed   = today.food_log.reduce((s, f) => s + f.cal, 0);
   const pConsumed  = today.food_log.reduce((s, f) => s + f.p,   0);
   const cConsumed  = today.food_log.reduce((s, f) => s + f.c,   0);
   const fConsumed  = today.food_log.reduce((s, f) => s + f.f,   0);
   return (
-    <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+    <ScrollView contentContainerStyle={{ padding: isDesktop ? 32 : 20, paddingBottom: isDesktop ? 40 : 100, alignItems: isDesktop ? 'center' : undefined }}>
+    <View style={{ width: '100%', maxWidth: isDesktop ? 860 : undefined }}>
       <View style={{ marginBottom: 20 }}>
         <Text style={{ color: C.muted, fontSize: 13 }}>{todayStr()}</Text>
         <Text style={{ color: C.text, fontSize: 24, fontWeight: '800', marginTop: 2 }}>{getGreeting()}{profile.username ? `, ${profile.username}` : ''} 👋</Text>
@@ -682,6 +755,7 @@ function TodayTab({ profile, macros, today, onAddWater, onResetWater, streak }) 
           ))}
         </Card>
       )}
+    </View>
     </ScrollView>
   );
 }
@@ -698,8 +772,10 @@ function LogTab({ today, onAddFood, onRemoveFood }) {
   }, []);
   const meals      = ['breakfast', 'lunch', 'dinner', 'snacks'];
   const totalCal   = today.food_log.reduce((s, f) => s + f.cal, 0);
+  const isDesktop  = useIsDesktop();
   return (
-    <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={{ padding: isDesktop ? 32 : 20, paddingBottom: isDesktop ? 40 : 100, alignItems: isDesktop ? 'center' : undefined }} keyboardShouldPersistTaps="handled">
+    <View style={{ width: '100%', maxWidth: isDesktop ? 860 : undefined }}>
       <Text style={{ color: C.text, fontSize: 22, fontWeight: '800', marginBottom: 16 }}>Nutrition Log</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 }}>
         {meals.map(m => <Chip key={m} label={m.charAt(0).toUpperCase() + m.slice(1)} active={meal === m} onPress={() => setMeal(m)} small />)}
@@ -751,6 +827,7 @@ function LogTab({ today, onAddFood, onRemoveFood }) {
           </Text>
         </Card>
       )}
+    </View>
     </ScrollView>
   );
 }
@@ -765,8 +842,10 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, streak }) {
   const dayOfWeek  = new Date().getDay();
   const totalSets  = today.exercises.reduce((s, e) => s + e.sets.length, 0);
   const totalVol   = today.exercises.reduce((s, e) => s + e.sets.reduce((ss, set) => ss + (set.weight||0)*(set.reps||0), 0), 0);
+  const isDesktop  = useIsDesktop();
   return (
-    <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+    <ScrollView contentContainerStyle={{ padding: isDesktop ? 32 : 20, paddingBottom: isDesktop ? 40 : 100, alignItems: isDesktop ? 'center' : undefined }}>
+    <View style={{ width: '100%', maxWidth: isDesktop ? 860 : undefined }}>
       <Text style={{ color: C.text, fontSize: 22, fontWeight: '800', marginBottom: 6 }}>Training</Text>
       <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
         {days.map((d, i) => {
@@ -826,6 +905,7 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, streak }) {
       {today.exercises.length > 0 && (
         <Btn label={today.completed ? '✓ Workout Complete!' : 'Finish Workout'} onPress={onFinishWorkout} variant={today.completed ? 'secondary' : 'primary'} style={{ marginTop: 8 }} />
       )}
+    </View>
     </ScrollView>
   );
 }
@@ -842,8 +922,10 @@ function MeTab({ profile, macros, weights, onAddWeight, onLogout, onEditProfile 
     setWeightInput('');
     setSaving(false);
   };
+  const isDesktop = useIsDesktop();
   return (
-    <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+    <ScrollView contentContainerStyle={{ padding: isDesktop ? 32 : 20, paddingBottom: isDesktop ? 40 : 100, alignItems: isDesktop ? 'center' : undefined }}>
+    <View style={{ width: '100%', maxWidth: isDesktop ? 860 : undefined }}>
       <View style={{ alignItems: 'center', marginBottom: 24 }}>
         <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: C.elevated, borderWidth: 2, borderColor: C.purple, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
           <Text style={{ fontSize: 32 }}>👤</Text>
@@ -897,6 +979,7 @@ function MeTab({ profile, macros, weights, onAddWeight, onLogout, onEditProfile 
         <Btn label="Edit Profile" onPress={onEditProfile} variant="secondary" />
         <Btn label="Sign Out" onPress={onLogout} variant="ghost" />
       </View>
+    </View>
     </ScrollView>
   );
 }
@@ -960,16 +1043,17 @@ function CoachModal({ visible, onClose, macros }) {
 }
 
 // ─── TAB BAR ─────────────────────────────────────────────────────────────────
+const NAV_TABS = [
+  { id: 'TODAY', label: 'Today',     icon: '◎' },
+  { id: 'LOG',   label: 'Nutrition', icon: '⊕' },
+  { id: 'TRAIN', label: 'Train',     icon: '△' },
+  { id: 'ME',    label: 'Me',        icon: '◉' },
+];
+
 function TabBar({ active, onPress, onCoach }) {
-  const TABS = [
-    { id: 'TODAY', label: 'Today',     icon: '◎' },
-    { id: 'LOG',   label: 'Nutrition', icon: '⊕' },
-    { id: 'TRAIN', label: 'Train',     icon: '△' },
-    { id: 'ME',    label: 'Me',        icon: '◉' },
-  ];
   return (
     <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.border, flexDirection: 'row', paddingBottom: Platform.OS === 'ios' ? 24 : 10, paddingTop: 10 }}>
-      {TABS.map(t => (
+      {NAV_TABS.map(t => (
         <TouchableOpacity key={t.id} onPress={() => onPress(t.id)} style={{ flex: 1, alignItems: 'center' }}>
           <Text style={{ fontSize: 18, color: active === t.id ? C.purple : C.dim }}>{t.icon}</Text>
           <Text style={{ fontSize: 10, color: active === t.id ? C.purple : C.dim, marginTop: 3, fontWeight: active === t.id ? '700' : '400' }}>{t.label}</Text>
@@ -978,6 +1062,50 @@ function TabBar({ active, onPress, onCoach }) {
       <TouchableOpacity onPress={onCoach} style={{ position: 'absolute', right: 16, top: -24, width: 48, height: 48, borderRadius: 24, backgroundColor: C.purple, alignItems: 'center', justifyContent: 'center', shadowColor: C.purple, shadowOpacity: 0.6, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 8 }}>
         <Text style={{ fontSize: 22 }}>⚡</Text>
       </TouchableOpacity>
+    </View>
+  );
+}
+
+// ─── SIDEBAR (desktop) ───────────────────────────────────────────────────────
+function Sidebar({ active, onPress, onCoach, username }) {
+  return (
+    <View style={{ width: 240, backgroundColor: C.surface, borderRightWidth: 1, borderRightColor: C.border, paddingTop: 32, paddingBottom: 24, paddingHorizontal: 16, justifyContent: 'space-between' }}>
+      <View>
+        {/* Logo */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 36, paddingHorizontal: 8 }}>
+          <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.borderBright, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 18 }}>⚡</Text>
+          </View>
+          <View>
+            <Text style={{ color: C.text, fontWeight: '800', fontSize: 16, letterSpacing: -0.5 }}>PULSE</Text>
+            <Text style={{ color: C.dim, fontSize: 10, letterSpacing: 1 }}>HEALTH COACH</Text>
+          </View>
+        </View>
+        {/* Nav items */}
+        {NAV_TABS.map(t => (
+          <TouchableOpacity key={t.id} onPress={() => onPress(t.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 12, borderRadius: 10, marginBottom: 4, backgroundColor: active === t.id ? C.elevated : 'transparent', borderWidth: active === t.id ? 1 : 0, borderColor: active === t.id ? C.border : 'transparent' }}>
+            <Text style={{ fontSize: 16, color: active === t.id ? C.purple : C.dim }}>{t.icon}</Text>
+            <Text style={{ color: active === t.id ? C.text : C.muted, fontWeight: active === t.id ? '600' : '400', fontSize: 14 }}>{t.label}</Text>
+            {active === t.id && <View style={{ flex: 1 }} />}
+            {active === t.id && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: C.purple }} />}
+          </TouchableOpacity>
+        ))}
+      </View>
+      {/* Bottom: AI Coach + user */}
+      <View style={{ gap: 10 }}>
+        <TouchableOpacity onPress={onCoach} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.purple, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 }}>
+          <Text style={{ fontSize: 16 }}>⚡</Text>
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>AI Coach</Text>
+        </TouchableOpacity>
+        {username ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 8, paddingVertical: 6 }}>
+            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: C.elevated, borderWidth: 1, borderColor: C.purple, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: 12 }}>👤</Text>
+            </View>
+            <Text style={{ color: C.muted, fontSize: 12 }} numberOfLines={1}>{username}</Text>
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -992,6 +1120,7 @@ export default function App() {
   const [loadingAuth,  setLoadingAuth]  = useState(true);
   const [tab,          setTab]          = useState('TODAY');
   const [coachVisible, setCoachVisible] = useState(false);
+  const isDesktop = useIsDesktop();
 
   const [profile, setProfile] = useState({ username: '', sex: 'male', age: null, height_cm: null, weight_kg: null, body_fat_pct: null, activity: 'moderate', goal: 'maintain', training_type: 'mixed', training_days: 3, diet: 'standard', sleep_hours: 7, time_frame: 3, water_target: 2500 });
   const [todayLog, setTodayLog] = useState({ food_log: [], water_ml: 0, id: null });
@@ -1162,12 +1291,15 @@ export default function App() {
       )}
 
       {screen === SCREENS.MAIN && (
-        <View style={{ flex: 1 }}>
-          {tab === 'TODAY' && <TodayTab profile={profile} macros={macros} today={todayLog} onAddWater={handleAddWater} onResetWater={handleResetWater} streak={streak} />}
-          {tab === 'LOG'   && <LogTab today={todayLog} onAddFood={handleAddFood} onRemoveFood={handleRemoveFood} />}
-          {tab === 'TRAIN' && <TrainTab today={workout} onLogSet={handleLogSet} onAddExercise={handleAddExercise} onFinishWorkout={handleFinishWorkout} streak={streak} />}
-          {tab === 'ME'    && <MeTab profile={profile} macros={macros} weights={weights} onAddWeight={handleAddWeight} onLogout={handleLogout} onEditProfile={() => setScreen(SCREENS.SETUP)} />}
-          <TabBar active={tab} onPress={setTab} onCoach={() => setCoachVisible(true)} />
+        <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column' }}>
+          {isDesktop && <Sidebar active={tab} onPress={setTab} onCoach={() => setCoachVisible(true)} username={profile.username} />}
+          <View style={{ flex: 1 }}>
+            {tab === 'TODAY' && <TodayTab profile={profile} macros={macros} today={todayLog} onAddWater={handleAddWater} onResetWater={handleResetWater} streak={streak} />}
+            {tab === 'LOG'   && <LogTab today={todayLog} onAddFood={handleAddFood} onRemoveFood={handleRemoveFood} />}
+            {tab === 'TRAIN' && <TrainTab today={workout} onLogSet={handleLogSet} onAddExercise={handleAddExercise} onFinishWorkout={handleFinishWorkout} streak={streak} />}
+            {tab === 'ME'    && <MeTab profile={profile} macros={macros} weights={weights} onAddWeight={handleAddWeight} onLogout={handleLogout} onEditProfile={() => setScreen(SCREENS.SETUP)} />}
+          </View>
+          {!isDesktop && <TabBar active={tab} onPress={setTab} onCoach={() => setCoachVisible(true)} />}
           <CoachModal visible={coachVisible} onClose={() => setCoachVisible(false)} macros={macros} />
         </View>
       )}
