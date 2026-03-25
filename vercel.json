@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npx expo export --platform web",
+  "buildCommand": "npx expo export --platform web && cp -r web/manifest.json dist/manifest.json && cp -r assets dist/assets",
   "outputDirectory": "dist",
   "framework": null
 }

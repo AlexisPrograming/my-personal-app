@@ -18,22 +18,23 @@ function useIsDesktop() { const { width } = useWindowDimensions(); return width 
 
 // ─── THEME ──────────────────────────────────────────────────────────────────
 const C = {
-  bg:           '#07070F',
-  surface:      '#0E0E1A',
-  card:         '#141422',
-  elevated:     '#1C1C30',
-  border:       'rgba(139,92,246,0.14)',
-  borderBright: 'rgba(139,92,246,0.35)',
-  purple:       '#8B5CF6',
-  purpleD:      '#6D28D9',
-  cyan:         '#06B6D4',
+  bg:           '#06060F',
+  surface:      '#0D0D1F',
+  card:         '#12122A',
+  elevated:     '#1A1A35',
+  border:       'rgba(139,92,246,0.18)',
+  borderBright: 'rgba(139,92,246,0.45)',
+  purple:       '#9D6FFF',
+  purpleD:      '#7C3AED',
+  purpleGlow:   'rgba(157,111,255,0.15)',
+  cyan:         '#22D3EE',
   green:        '#10B981',
-  amber:        '#F59E0B',
-  red:          '#EF4444',
-  text:         '#F1F5F9',
-  muted:        '#94A3B8',
-  dim:          '#475569',
-  subtle:       '#1E293B',
+  amber:        '#FBBF24',
+  red:          '#F87171',
+  text:         '#F0EEFF',
+  muted:        '#9B93B8',
+  dim:          '#4B4570',
+  subtle:       '#16163A',
 };
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
@@ -201,25 +202,43 @@ function getCoachReply(msg, macros) {
 
 // ─── PRIMITIVES ──────────────────────────────────────────────────────────────
 function Btn({ label, onPress, variant = 'primary', style, disabled, loading }) {
-  const bg     = variant === 'primary' ? C.purple : 'transparent';
-  const border = variant === 'secondary' ? C.borderBright : 'transparent';
-  const color  = variant === 'ghost' ? C.muted : C.text;
+  const isPrimary = variant === 'primary';
   return (
     <TouchableOpacity onPress={onPress} disabled={disabled || loading} style={[{
-      backgroundColor: bg, borderWidth: variant === 'secondary' ? 1 : 0,
-      borderColor: border, borderRadius: 12, paddingVertical: 14,
-      alignItems: 'center', opacity: disabled ? 0.5 : 1,
+      backgroundColor: isPrimary ? C.purple : 'transparent',
+      borderWidth: variant === 'secondary' ? 1 : 0,
+      borderColor: C.borderBright,
+      borderRadius: 14,
+      paddingVertical: 15,
+      alignItems: 'center',
+      opacity: disabled ? 0.4 : 1,
+      shadowColor: isPrimary ? C.purple : 'transparent',
+      shadowOpacity: isPrimary ? 0.4 : 0,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: isPrimary ? 6 : 0,
     }, style]}>
       {loading
         ? <ActivityIndicator color={C.text} size="small" />
-        : <Text style={{ color, fontWeight: '600', fontSize: 15 }}>{label}</Text>}
+        : <Text style={{ color: variant === 'ghost' ? C.muted : C.text, fontWeight: '700', fontSize: 15, letterSpacing: 0.2 }}>{label}</Text>}
     </TouchableOpacity>
   );
 }
 
 function Card({ children, style, glow }) {
   return (
-    <View style={[{ backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: glow ? C.borderBright : C.border, padding: 16, marginBottom: 12 }, style]}>
+    <View style={[{
+      backgroundColor: C.card,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: glow ? C.borderBright : C.border,
+      padding: 18,
+      marginBottom: 12,
+      shadowColor: glow ? C.purple : '#000',
+      shadowOpacity: glow ? 0.2 : 0.08,
+      shadowRadius: glow ? 16 : 8,
+      shadowOffset: { width: 0, height: 4 },
+    }, style]}>
       {children}
     </View>
   );
@@ -228,8 +247,20 @@ function Card({ children, style, glow }) {
 function Chip({ label, active, onPress, color, small }) {
   const accent = color || C.purple;
   return (
-    <TouchableOpacity onPress={onPress} style={{ backgroundColor: active ? accent : C.elevated, borderRadius: 999, paddingHorizontal: small ? 12 : 16, paddingVertical: small ? 6 : 9, marginRight: 8, marginBottom: 8, borderWidth: 1, borderColor: active ? accent : C.border }}>
-      <Text style={{ color: active ? '#fff' : C.muted, fontSize: small ? 12 : 13, fontWeight: '500' }}>{label}</Text>
+    <TouchableOpacity onPress={onPress} style={{
+      backgroundColor: active ? accent : C.elevated,
+      borderRadius: 999,
+      paddingHorizontal: small ? 12 : 16,
+      paddingVertical: small ? 6 : 9,
+      marginRight: 8, marginBottom: 8,
+      borderWidth: 1,
+      borderColor: active ? accent : C.border,
+      shadowColor: active ? accent : 'transparent',
+      shadowOpacity: active ? 0.3 : 0,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+    }}>
+      <Text style={{ color: active ? '#fff' : C.muted, fontSize: small ? 12 : 13, fontWeight: active ? '700' : '500' }}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -582,7 +613,7 @@ function SetupScreen({ onComplete, userId }) {
       if (error) throw error;
       onComplete(profileData);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      if (Platform.OS === 'web') { window.alert(`Error: ${e.message}`); } else { Alert.alert('Error', e.message); }
     } finally { setSaving(false); }
   };
 
@@ -1241,7 +1272,7 @@ export default function App() {
     const newStreak = streak + 1;
     setStreak(newStreak);
     await supabase.from('streaks').upsert({ user_id: user.id, current_streak: newStreak, last_workout_date: todayISO() }, { onConflict: 'user_id' });
-    Alert.alert('Workout Complete! 🔥', `${newStreak} day streak — keep going!`);
+    if (Platform.OS === 'web') { window.alert(`Workout Complete! 🔥 ${newStreak} day streak — keep going!`); } else { Alert.alert('Workout Complete! 🔥', `${newStreak} day streak — keep going!`); }
   };
 
   const handleAddWeight = async (kg) => {
@@ -1249,16 +1280,18 @@ export default function App() {
     if (data) setWeights(prev => [...prev, data]);
   };
 
-  const handleLogout = () => {
-    Alert.alert('Sign out', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: async () => {
-        await supabase.auth.signOut();
-        setTodayLog({ food_log: [], water_ml: 0, id: null });
-        setWorkout({ exercises: [], completed: false, id: null });
-        setStreak(0); setWeights([]);
-      }},
-    ]);
+  const handleLogout = async () => {
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm('Are you sure you want to sign out?')
+      : await new Promise(resolve => Alert.alert('Sign out', 'Are you sure?', [
+          { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+          { text: 'Sign out', style: 'destructive', onPress: () => resolve(true) },
+        ]));
+    if (!confirmed) return;
+    await supabase.auth.signOut();
+    setTodayLog({ food_log: [], water_ml: 0, id: null });
+    setWorkout({ exercises: [], completed: false, id: null });
+    setStreak(0); setWeights([]);
   };
 
   const handleSetupComplete = (p) => {
@@ -1313,7 +1346,13 @@ export default function App() {
 
 const styles = {
   input: {
-    backgroundColor: C.elevated, borderRadius: 10, paddingHorizontal: 14,
-    paddingVertical: 12, color: C.text, fontSize: 14, borderWidth: 1, borderColor: C.border,
+    backgroundColor: C.elevated,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    color: C.text,
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: C.border,
   },
 };
