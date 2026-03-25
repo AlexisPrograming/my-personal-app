@@ -10,6 +10,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import Svg, { Circle, Line } from 'react-native-svg';
 import { supabase } from './supabaseConfig';
+import { checkRateLimit, showRateLimitAlert, LIMITS } from './src/utils/rateLimiter';
 
 const { width: W } = Dimensions.get('window');
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -480,6 +481,8 @@ function AuthScreen({ onBack, initialMode = 'signup' }) {
 
   const submit = async () => {
     setError('');
+    const rl = checkRateLimit('auth:submit', LIMITS.authSubmit.maxCalls, LIMITS.authSubmit.windowMs);
+    if (!rl.allowed) { setError(`Too many attempts. Please wait ${rl.retryAfterMs}s and try again.`); return; }
     if (!/\S+@\S+\.\S+/.test(email))   { setError('Enter a valid email.'); return; }
     if (password.length < 6)            { setError('Password needs at least 6 characters.'); return; }
     if (mode === 'signup' && username.length < 3) { setError('Username needs at least 3 characters.'); return; }
@@ -623,6 +626,8 @@ function SetupScreen({ onComplete, userId }) {
   const goBack = () => { if (step === 0) return; animateStep(-1); setStep(s => s - 1); };
 
   const finish = async () => {
+    const rl = checkRateLimit('profile:save', LIMITS.profileSave.maxCalls, LIMITS.profileSave.windowMs);
+    if (!rl.allowed) { showRateLimitAlert(rl.retryAfterMs, 'saving your profile'); return; }
     setSaving(true);
     const profileData = {
       goal, sex,
@@ -1112,11 +1117,86 @@ function CoachModal({ visible, onClose, macros }) {
   );
 }
 
+// ─── HISTORY TAB ─────────────────────────────────────────────────────────────
+function HistoryTab({ logs, workouts, loading }) {
+  const isDesktop = useIsDesktop();
+  const byDate = {};
+  logs.forEach(l  => { byDate[l.log_date]      = { ...(byDate[l.log_date]      || {}), log:     l }; });
+  workouts.forEach(w => { byDate[w.workout_date] = { ...(byDate[w.workout_date] || {}), workout: w }; });
+  const dates  = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
+  const byMonth = {};
+  dates.forEach(d => {
+    const m = d.slice(0, 7);
+    if (!byMonth[m]) byMonth[m] = [];
+    byMonth[m].push(d);
+  });
+  const months = Object.keys(byMonth).sort((a, b) => b.localeCompare(a));
+
+  if (loading) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.purple} size="large" /></View>;
+
+  if (!dates.length) return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+      <Text style={{ color: C.muted, fontSize: 15, textAlign: 'center' }}>No history yet.{'\n'}Start logging to see your progress here.</Text>
+    </View>
+  );
+
+  return (
+    <ScrollView contentContainerStyle={{ padding: isDesktop ? 32 : 20, paddingBottom: isDesktop ? 40 : 100, alignItems: isDesktop ? 'center' : undefined }}>
+      <View style={{ width: '100%', maxWidth: isDesktop ? 860 : undefined }}>
+        <Text style={{ color: C.text, fontWeight: '800', fontSize: 22, marginBottom: 4 }}>History</Text>
+        <Text style={{ color: C.muted, fontSize: 13, marginBottom: 24 }}>Your last 30 days at a glance.</Text>
+        {months.map(month => (
+          <View key={month} style={{ marginBottom: 24 }}>
+            <Text style={{ color: C.purple, fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 10 }}>
+              {new Date(month + '-02').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()}
+            </Text>
+            {byMonth[month].map(date => {
+              const entry   = byDate[date];
+              const log     = entry.log;
+              const workout = entry.workout;
+              const cal     = log ? (log.food_log || []).reduce((s, f) => s + (f.cal || 0), 0) : 0;
+              const protein = log ? (log.food_log || []).reduce((s, f) => s + (f.p   || 0), 0) : 0;
+              const water   = log ? (log.water_ml || 0) : 0;
+              const d = new Date(date + 'T12:00:00');
+              return (
+                <Card key={date} style={{ marginBottom: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: C.elevated, alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                      <Text style={{ color: C.purple, fontWeight: '800', fontSize: 17 }}>{d.getDate()}</Text>
+                      <Text style={{ color: C.dim, fontSize: 9, letterSpacing: 0.5 }}>{d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      {log
+                        ? <><Text style={{ color: C.text, fontWeight: '600', fontSize: 13 }}>{cal} kcal · {Math.round(protein)}g protein</Text>
+                            <Text style={{ color: C.muted, fontSize: 11, marginTop: 2 }}>💧 {water} ml water</Text></>
+                        : <Text style={{ color: C.dim, fontSize: 12 }}>No food logged</Text>}
+                    </View>
+                    {workout && (
+                      <View style={{ borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1,
+                        backgroundColor: workout.completed ? C.purpleGlow : C.elevated,
+                        borderColor:     workout.completed ? C.purple     : C.border }}>
+                        <Text style={{ color: workout.completed ? C.purple : C.dim, fontSize: 11, fontWeight: '700' }}>
+                          {workout.completed ? '✓ Trained' : 'Rest'}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </Card>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+
 // ─── TAB BAR ─────────────────────────────────────────────────────────────────
 const NAV_TABS = [
   { id: 'TODAY', label: 'Today',     icon: '◎' },
   { id: 'LOG',   label: 'Nutrition', icon: '⊕' },
   { id: 'TRAIN', label: 'Train',     icon: '△' },
+  { id: 'HIST',  label: 'History',   icon: '▤' },
   { id: 'ME',    label: 'Me',        icon: '◉' },
 ];
 
@@ -1197,6 +1277,11 @@ export default function App() {
   const [workout,  setWorkout]  = useState({ exercises: [], completed: false, id: null });
   const [streak,   setStreak]   = useState(0);
   const [weights,  setWeights]  = useState([]);
+  const [historyLogs,     setHistoryLogs]     = useState([]);
+  const [historyWorkouts, setHistoryWorkouts] = useState([]);
+  const [loadingHistory,  setLoadingHistory]  = useState(false);
+  const [historyLoaded,   setHistoryLoaded]   = useState(false);
+  const sessionDateRef = useRef(todayISO());
 
   const macros = calcMacros({ weight: profile.weight_kg, height: profile.height_cm, age: profile.age, sex: profile.sex, goal: profile.goal, activity: profile.activity });
 
@@ -1212,6 +1297,45 @@ export default function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // ── Midnight date-change detection ──
+  useEffect(() => {
+    if (!user || screen !== SCREENS.MAIN) return;
+    const timer = setInterval(async () => {
+      const now = todayISO();
+      if (now !== sessionDateRef.current) {
+        sessionDateRef.current = now;
+        setTodayLog({ food_log: [], water_ml: 0, id: null });
+        setWorkout({ exercises: [], completed: false, id: null });
+        setHistoryLoaded(false);
+        const [dailyRes, workoutRes] = await Promise.all([
+          supabase.from('daily_logs').select('*').eq('user_id', user.id).eq('log_date', now).single(),
+          supabase.from('workouts').select('*').eq('user_id', user.id).eq('workout_date', now).single(),
+        ]);
+        if (dailyRes.data)   setTodayLog({ ...dailyRes.data, food_log: dailyRes.data.food_log || [] });
+        if (workoutRes.data) setWorkout({ ...workoutRes.data, exercises: workoutRes.data.exercises || [] });
+      }
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, [user, screen]);
+
+  // ── Load history (last 30 days) on first visit to HIST tab ──
+  useEffect(() => {
+    if (tab !== 'HIST' || historyLoaded || !user) return;
+    const fetchHistory = async () => {
+      setLoadingHistory(true);
+      const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const [logsRes, workoutsRes] = await Promise.all([
+        supabase.from('daily_logs').select('*').eq('user_id', user.id).gte('log_date', since).order('log_date', { ascending: false }),
+        supabase.from('workouts').select('*').eq('user_id', user.id).gte('workout_date', since).order('workout_date', { ascending: false }),
+      ]);
+      if (logsRes.data)     setHistoryLogs(logsRes.data);
+      if (workoutsRes.data) setHistoryWorkouts(workoutsRes.data);
+      setHistoryLoaded(true);
+      setLoadingHistory(false);
+    };
+    fetchHistory();
+  }, [tab, historyLoaded, user]);
 
   const loadUserData = async (u) => {
     setUser(u);
@@ -1263,9 +1387,12 @@ export default function App() {
 
   // ── Handlers ──
   const handleAddFood = async (food) => {
+    const rl = checkRateLimit('food:log', LIMITS.foodLog.maxCalls, LIMITS.foodLog.windowMs);
+    if (!rl.allowed) { showRateLimitAlert(rl.retryAfterMs, 'logging food'); return; }
     const newLog = { ...todayLog, food_log: [...todayLog.food_log, food] };
     const saved  = await saveDailyLog(newLog);
     setTodayLog(saved || newLog);
+    setHistoryLoaded(false);
   };
 
   const handleRemoveFood = async (logId) => {
@@ -1275,6 +1402,8 @@ export default function App() {
   };
 
   const handleAddWater = async (ml) => {
+    const rl = checkRateLimit('water:update', LIMITS.waterUpdate.maxCalls, LIMITS.waterUpdate.windowMs);
+    if (!rl.allowed) { showRateLimitAlert(rl.retryAfterMs, 'updating water'); return; }
     const newLog = { ...todayLog, water_ml: todayLog.water_ml + ml };
     const saved  = await saveDailyLog(newLog);
     setTodayLog(saved || newLog);
@@ -1293,6 +1422,8 @@ export default function App() {
   };
 
   const handleLogSet = async (exIndex, set) => {
+    const rl = checkRateLimit('set:log', LIMITS.setLog.maxCalls, LIMITS.setLog.windowMs);
+    if (!rl.allowed) { showRateLimitAlert(rl.retryAfterMs, 'logging a set'); return; }
     const exs      = [...workout.exercises];
     exs[exIndex]   = { ...exs[exIndex], sets: [...exs[exIndex].sets, set] };
     const newW     = { ...workout, exercises: exs };
@@ -1304,6 +1435,7 @@ export default function App() {
     const newW  = { ...workout, completed: true };
     const saved = await saveWorkout(newW);
     setWorkout(saved || newW);
+    setHistoryLoaded(false);
     const newStreak = streak + 1;
     setStreak(newStreak);
     await supabase.from('streaks').upsert({ user_id: user.id, current_streak: newStreak, last_workout_date: todayISO() }, { onConflict: 'user_id' });
@@ -1311,6 +1443,8 @@ export default function App() {
   };
 
   const handleAddWeight = async (kg) => {
+    const rl = checkRateLimit('weight:log', LIMITS.weightLog.maxCalls, LIMITS.weightLog.windowMs);
+    if (!rl.allowed) { showRateLimitAlert(rl.retryAfterMs, 'logging weight'); return; }
     const { data } = await supabase.from('weight_history').insert({ user_id: user.id, weight_kg: kg, logged_at: todayISO() }).select().single();
     if (data) setWeights(prev => [...prev, data]);
   };
@@ -1369,6 +1503,7 @@ export default function App() {
             {tab === 'TODAY' && <TodayTab profile={profile} macros={macros} today={todayLog} onAddWater={handleAddWater} onResetWater={handleResetWater} streak={streak} />}
             {tab === 'LOG'   && <LogTab today={todayLog} onAddFood={handleAddFood} onRemoveFood={handleRemoveFood} />}
             {tab === 'TRAIN' && <TrainTab today={workout} onLogSet={handleLogSet} onAddExercise={handleAddExercise} onFinishWorkout={handleFinishWorkout} streak={streak} />}
+            {tab === 'HIST'  && <HistoryTab logs={historyLogs} workouts={historyWorkouts} loading={loadingHistory} />}
             {tab === 'ME'    && <MeTab profile={profile} macros={macros} weights={weights} onAddWeight={handleAddWeight} onLogout={handleLogout} onEditProfile={() => setScreen(SCREENS.SETUP)} />}
           </View>
           {!isDesktop && <TabBar active={tab} onPress={setTab} onCoach={() => setCoachVisible(true)} />}
