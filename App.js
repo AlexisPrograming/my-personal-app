@@ -483,6 +483,8 @@ function AuthScreen({ onBack, initialMode = 'signup' }) {
     if (!/\S+@\S+\.\S+/.test(email))   { setError('Enter a valid email.'); return; }
     if (password.length < 6)            { setError('Password needs at least 6 characters.'); return; }
     if (mode === 'signup' && username.length < 3) { setError('Username needs at least 3 characters.'); return; }
+    if (mode === 'signup' && username.length > 30) { setError('Username must be 30 characters or less.'); return; }
+    if (mode === 'signup' && !/^[a-zA-Z0-9_]+$/.test(username.trim())) { setError('Username can only contain letters, numbers, and underscores.'); return; }
     setLoading(true);
     try {
       if (mode === 'signup') {
@@ -596,17 +598,45 @@ function SetupScreen({ onComplete, userId }) {
     ]).start();
   };
 
-  const goNext = () => { animateStep(1); setStep(s => s + 1); };
+  const clampNum = (val, min, max) => { const n = Number(val); return isNaN(n) ? min : Math.min(max, Math.max(min, n)); };
+
+  const goNext = () => {
+    if (step === 1) {
+      const a = Number(age), h = Number(height), w = Number(weight), bf = bodyFat ? Number(bodyFat) : null;
+      if (!age || isNaN(a) || a < 10 || a > 120) { Alert.alert('Invalid age', 'Enter an age between 10 and 120.'); return; }
+      if (!height || isNaN(h) || h < 50 || h > 300) { Alert.alert('Invalid height', 'Enter a height between 50 and 300 cm.'); return; }
+      if (!weight || isNaN(w) || w < 10 || w > 500) { Alert.alert('Invalid weight', 'Enter a weight between 10 and 500 kg.'); return; }
+      if (bf !== null && (isNaN(bf) || bf < 0 || bf > 70)) { Alert.alert('Invalid body fat', 'Enter a body fat % between 0 and 70.'); return; }
+    }
+    if (step === 2) {
+      const td = Number(trainingDays);
+      if (!trainingDays || isNaN(td) || td < 0 || td > 7) { Alert.alert('Invalid training days', 'Enter 0–7 days per week.'); return; }
+    }
+    if (step === 3) {
+      const sl = Number(sleep), tf = Number(timeFrame), wt = Number(waterTarget);
+      if (!sleep || isNaN(sl) || sl < 0 || sl > 24) { Alert.alert('Invalid sleep', 'Enter sleep hours between 0 and 24.'); return; }
+      if (!timeFrame || isNaN(tf) || tf < 1 || tf > 60) { Alert.alert('Invalid time frame', 'Enter a time frame between 1 and 60 months.'); return; }
+      if (!waterTarget || isNaN(wt) || wt < 0 || wt > 10000) { Alert.alert('Invalid water target', 'Enter a water target between 0 and 10000 ml.'); return; }
+    }
+    animateStep(1); setStep(s => s + 1);
+  };
   const goBack = () => { if (step === 0) return; animateStep(-1); setStep(s => s - 1); };
 
   const finish = async () => {
     setSaving(true);
     const profileData = {
-      goal, sex, age: Number(age), height_cm: Number(height),
-      weight_kg: Number(weight), body_fat_pct: bodyFat ? Number(bodyFat) : null,
-      activity, training_type: trainingType, training_days: Number(trainingDays),
-      diet, sleep_hours: Number(sleep), time_frame: Number(timeFrame),
-      water_target: Number(waterTarget), profile_complete: true,
+      goal, sex,
+      age:            clampNum(age, 10, 120),
+      height_cm:      clampNum(height, 50, 300),
+      weight_kg:      clampNum(weight, 10, 500),
+      body_fat_pct:   bodyFat ? clampNum(bodyFat, 0, 70) : null,
+      activity, training_type: trainingType,
+      training_days:  clampNum(trainingDays, 0, 7),
+      diet,
+      sleep_hours:    clampNum(sleep, 0, 24),
+      time_frame:     clampNum(timeFrame, 1, 60),
+      water_target:   clampNum(waterTarget, 0, 10000),
+      profile_complete: true,
     };
     try {
       const { error } = await supabase.from('profiles').update(profileData).eq('id', userId);
@@ -931,7 +961,7 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, streak }) {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
             <TextInput style={[styles.input, { flex: 1, paddingVertical: 8 }]} placeholder="kg" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.weight||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], weight: v } }))} />
             <TextInput style={[styles.input, { flex: 1, paddingVertical: 8 }]} placeholder="reps" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.reps||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], reps: v } }))} />
-            <TouchableOpacity onPress={() => { const inp = setInputs[ex.id]||{}; onLogSet(ei, { weight: Number(inp.weight)||0, reps: Number(inp.reps)||0 }); setSetInputs(p => ({ ...p, [ex.id]: {} })); }} style={{ backgroundColor: C.purple, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 9 }}>
+            <TouchableOpacity onPress={() => { const inp = setInputs[ex.id]||{}; const w = Math.min(1000, Math.max(0, Number(inp.weight)||0)); const r = Math.min(9999, Math.max(0, Math.round(Number(inp.reps)||0))); onLogSet(ei, { weight: w, reps: r }); setSetInputs(p => ({ ...p, [ex.id]: {} })); }} style={{ backgroundColor: C.purple, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 9 }}>
               <Text style={{ color: '#fff', fontWeight: '700' }}>Log</Text>
             </TouchableOpacity>
           </View>
@@ -952,8 +982,13 @@ function MeTab({ profile, macros, weights, onAddWeight, onLogout, onEditProfile 
   const goalObj = GOALS.find(g => g.id === profile.goal);
   const handleAddWeight = async () => {
     if (!weightInput) return;
+    const kg = Number(weightInput);
+    if (isNaN(kg) || kg < 10 || kg > 500) {
+      if (Platform.OS === 'web') { window.alert('Enter a valid weight between 10 and 500 kg.'); } else { Alert.alert('Invalid weight', 'Enter a value between 10 and 500 kg.'); }
+      return;
+    }
     setSaving(true);
-    await onAddWeight(Number(weightInput));
+    await onAddWeight(kg);
     setWeightInput('');
     setSaving(false);
   };
