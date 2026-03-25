@@ -20,7 +20,13 @@
       "mcp__34ae4f8b-4fde-460d-922b-7eef28b1d3c9__get_publishable_keys",
       "mcp__34ae4f8b-4fde-460d-922b-7eef28b1d3c9__apply_migration",
       "Bash(npx vercel:*)",
-      "Bash(npx expo:*)"
+      "Bash(npx expo:*)",
+      "Bash(find 'D:/my personal app/web' -name *.js -o -name *.ts -o -name *.env*)",
+      "Bash(grep -r \"EXPO_PUBLIC\\\\|apiKey\\\\|secret\\\\|password\\\\|token\\\\|API_KEY\\\\|supabase\\\\|firebase\" 'D:/my personal app' --include=*.js --include=*.ts --include=*.env -l)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "claude-flow"
+  ]
 }
