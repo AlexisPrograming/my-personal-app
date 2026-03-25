@@ -484,7 +484,7 @@ function AuthScreen({ onBack, initialMode = 'signup' }) {
     const rl = checkRateLimit('auth:submit', LIMITS.authSubmit.maxCalls, LIMITS.authSubmit.windowMs);
     if (!rl.allowed) { setError(`Too many attempts. Please wait ${rl.retryAfterMs}s and try again.`); return; }
     if (!/\S+@\S+\.\S+/.test(email))   { setError('Enter a valid email.'); return; }
-    if (password.length < 6)            { setError('Password needs at least 6 characters.'); return; }
+    if (password.length < 12)           { setError('Password needs at least 12 characters.'); return; }
     if (mode === 'signup' && username.length < 3) { setError('Username needs at least 3 characters.'); return; }
     if (mode === 'signup' && username.length > 30) { setError('Username must be 30 characters or less.'); return; }
     if (mode === 'signup' && !/^[a-zA-Z0-9_]+$/.test(username.trim())) { setError('Username can only contain letters, numbers, and underscores.'); return; }
@@ -548,7 +548,7 @@ function AuthScreen({ onBack, initialMode = 'signup' }) {
       </View>
       <View style={{ marginBottom: 24 }}>
         <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Password</Text>
-        <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry placeholder="Min. 6 characters" placeholderTextColor={C.dim} />
+        <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry placeholder="Min. 12 characters" placeholderTextColor={C.dim} />
       </View>
       {error ? <Text style={{ color: C.red, fontSize: 13, marginBottom: 16, textAlign: 'center' }}>{error}</Text> : null}
       <Btn label={mode === 'signup' ? 'Create Account' : 'Sign In'} onPress={submit} loading={loading} />
@@ -832,73 +832,189 @@ function TodayTab({ profile, macros, today, onAddWater, onResetWater, streak }) 
 
 // ─── LOG TAB ──────────────────────────────────────────────────────────────────
 function LogTab({ today, onAddFood, onRemoveFood }) {
-  const [query,   setQuery]   = useState('');
-  const [results, setResults] = useState([]);
-  const [meal,    setMeal]    = useState('breakfast');
+  const [query,     setQuery]     = useState('');
+  const [results,   setResults]   = useState([]);
+  const [meal,      setMeal]      = useState('breakfast');
+  const [showForm,  setShowForm]  = useState(false);
+  const [cName,     setCName]     = useState('');
+  const [cWeight,   setCWeight]   = useState('');
+  const [cCal,      setCCal]      = useState('');
+  const [cP,        setCP]        = useState('');
+  const [cC,        setCC]        = useState('');
+  const [cF,        setCF]        = useState('');
+
+  const meals     = ['breakfast', 'lunch', 'dinner', 'snacks'];
+  const totalCal  = today.food_log.reduce((s, f) => s + f.cal, 0);
+  const isDesktop = useIsDesktop();
+  const noResults = query.trim().length > 0 && results.length === 0;
+
   const search = useCallback((q) => {
     setQuery(q);
     if (!q.trim()) { setResults([]); return; }
     setResults(FOOD_DB.filter(f => f.name.toLowerCase().includes(q.toLowerCase())).slice(0, 8));
   }, []);
-  const meals      = ['breakfast', 'lunch', 'dinner', 'snacks'];
-  const totalCal   = today.food_log.reduce((s, f) => s + f.cal, 0);
-  const isDesktop  = useIsDesktop();
+
+  const openForm = (prefill = '') => {
+    setCName(prefill); setCWeight(''); setCCal(''); setCP(''); setCC(''); setCF('');
+    setShowForm(true);
+  };
+
+  const cancelForm = () => setShowForm(false);
+
+  const submitCustom = () => {
+    if (!cName.trim()) return;
+    onAddFood({
+      id: 'custom_' + Date.now(),
+      name: cName.trim(),
+      cal:  Math.max(0, Number(cCal) || 0),
+      p:    Math.max(0, Number(cP)   || 0),
+      c:    Math.max(0, Number(cC)   || 0),
+      f:    Math.max(0, Number(cF)   || 0),
+      unit: cWeight ? `${cWeight}g` : 'serving',
+      meal,
+      logId: Date.now().toString(),
+    });
+    setShowForm(false);
+    setQuery(''); setResults([]);
+  };
+
   return (
-    <ScrollView contentContainerStyle={{ padding: isDesktop ? 32 : 20, paddingBottom: isDesktop ? 40 : 100, alignItems: isDesktop ? 'center' : undefined }} keyboardShouldPersistTaps="handled">
-    <View style={{ width: '100%', maxWidth: isDesktop ? 860 : undefined }}>
-      <Text style={{ color: C.text, fontSize: 22, fontWeight: '800', marginBottom: 16 }}>Nutrition Log</Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 }}>
-        {meals.map(m => <Chip key={m} label={m.charAt(0).toUpperCase() + m.slice(1)} active={meal === m} onPress={() => setMeal(m)} small />)}
-      </View>
-      <View style={{ backgroundColor: C.card, borderRadius: 12, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, borderWidth: 1, borderColor: C.border, marginBottom: 8 }}>
-        <Text style={{ color: C.dim, marginRight: 8 }}>🔍</Text>
-        <TextInput style={{ flex: 1, color: C.text, paddingVertical: 12, fontSize: 14 }} value={query} onChangeText={search} placeholder="Search foods…" placeholderTextColor={C.dim} />
-        {query ? <TouchableOpacity onPress={() => { setQuery(''); setResults([]); }}><Text style={{ color: C.dim, fontSize: 18 }}>×</Text></TouchableOpacity> : null}
-      </View>
-      {results.map(f => (
-        <TouchableOpacity key={f.id} onPress={() => { onAddFood({ ...f, meal, logId: Date.now().toString() + f.id }); setQuery(''); setResults([]); }} style={{ backgroundColor: C.elevated, borderRadius: 10, padding: 12, marginBottom: 6, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.border }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: C.text, fontWeight: '600', fontSize: 13 }}>{f.name}</Text>
-            <Text style={{ color: C.muted, fontSize: 11, marginTop: 2 }}>{f.unit}  ·  P: {f.p}g  C: {f.c}g  F: {f.f}g</Text>
+    <View style={{ flex: 1 }}>
+      <ScrollView
+        contentContainerStyle={{ padding: isDesktop ? 32 : 20, paddingBottom: isDesktop ? 40 : 120, alignItems: isDesktop ? 'center' : undefined }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={{ width: '100%', maxWidth: isDesktop ? 860 : undefined }}>
+
+          <Text style={{ color: C.text, fontSize: 22, fontWeight: '800', marginBottom: 16 }}>Nutrition Log</Text>
+
+          {/* Meal selector */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 }}>
+            {meals.map(m => <Chip key={m} label={m.charAt(0).toUpperCase() + m.slice(1)} active={meal === m} onPress={() => setMeal(m)} small />)}
           </View>
-          <Text style={{ color: C.purple, fontWeight: '700', fontSize: 14, marginRight: 8 }}>{f.cal} kcal</Text>
-          <Text style={{ color: C.green, fontSize: 20 }}>＋</Text>
-        </TouchableOpacity>
-      ))}
-      {meals.map(m => {
-        const items   = today.food_log.filter(f => f.meal === m);
-        if (!items.length) return null;
-        const mealCal = items.reduce((s, f) => s + f.cal, 0);
-        return (
-          <View key={m} style={{ marginTop: 16 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-              <Text style={{ color: C.text, fontWeight: '700', fontSize: 14 }}>{m.charAt(0).toUpperCase() + m.slice(1)}</Text>
-              <Text style={{ color: C.purple, fontSize: 12 }}>{mealCal} kcal</Text>
-            </View>
-            {items.map(f => (
-              <View key={f.logId} style={{ backgroundColor: C.card, borderRadius: 10, padding: 12, marginBottom: 6, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.border }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: C.text, fontSize: 13, fontWeight: '500' }}>{f.name}</Text>
-                  <Text style={{ color: C.muted, fontSize: 11, marginTop: 2 }}>P: {f.p}g  C: {f.c}g  F: {f.f}g</Text>
-                </View>
-                <Text style={{ color: C.amber, fontWeight: '700', marginRight: 12 }}>{f.cal} kcal</Text>
-                <TouchableOpacity onPress={() => onRemoveFood(f.logId)}><Text style={{ color: C.red, fontSize: 18 }}>×</Text></TouchableOpacity>
+
+          {/* Search bar */}
+          <View style={{ backgroundColor: C.card, borderRadius: 12, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, borderWidth: 1, borderColor: C.border, marginBottom: 8 }}>
+            <Text style={{ color: C.dim, marginRight: 8 }}>🔍</Text>
+            <TextInput style={{ flex: 1, color: C.text, paddingVertical: 12, fontSize: 14 }} value={query} onChangeText={search} placeholder="Search foods…" placeholderTextColor={C.dim} />
+            {query ? <TouchableOpacity onPress={() => { setQuery(''); setResults([]); }}><Text style={{ color: C.dim, fontSize: 18 }}>×</Text></TouchableOpacity> : null}
+          </View>
+
+          {/* Search results */}
+          {results.map(f => (
+            <TouchableOpacity key={f.id} onPress={() => { onAddFood({ ...f, meal, logId: Date.now().toString() + f.id }); setQuery(''); setResults([]); }} style={{ backgroundColor: C.elevated, borderRadius: 10, padding: 12, marginBottom: 6, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.border }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: C.text, fontWeight: '600', fontSize: 13 }}>{f.name}</Text>
+                <Text style={{ color: C.muted, fontSize: 11, marginTop: 2 }}>{f.unit}  ·  P: {f.p}g  C: {f.c}g  F: {f.f}g</Text>
               </View>
-            ))}
-          </View>
-        );
-      })}
-      {today.food_log.length > 0 && (
-        <Card style={{ marginTop: 16 }} glow>
-          <Text style={{ color: C.muted, fontSize: 11, letterSpacing: 1, marginBottom: 8 }}>TODAY'S TOTALS</Text>
-          <Text style={{ color: C.text, fontWeight: '800', fontSize: 22 }}>{totalCal} kcal</Text>
-          <Text style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>
-            P: {Math.round(today.food_log.reduce((s,f)=>s+f.p,0))}g  ·  C: {Math.round(today.food_log.reduce((s,f)=>s+f.c,0))}g  ·  F: {Math.round(today.food_log.reduce((s,f)=>s+f.f,0))}g
-          </Text>
-        </Card>
-      )}
+              <Text style={{ color: C.purple, fontWeight: '700', fontSize: 14, marginRight: 8 }}>{f.cal} kcal</Text>
+              <Text style={{ color: C.green, fontSize: 20, fontWeight: '700' }}>+</Text>
+            </TouchableOpacity>
+          ))}
+
+          {/* "Not found" hint */}
+          {noResults && !showForm && (
+            <TouchableOpacity onPress={() => openForm(query)} style={{ backgroundColor: C.card, borderRadius: 10, padding: 12, marginBottom: 8, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.borderBright }}>
+              <Text style={{ color: C.muted, flex: 1, fontSize: 13 }}>"{query}" not found — add it manually</Text>
+              <Text style={{ color: C.purple, fontWeight: '700' }}>+</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* ── Inline custom-food form ── */}
+          {showForm ? (
+            <View style={{ backgroundColor: C.card, borderRadius: 16, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: C.borderBright }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <Text style={{ color: C.text, fontWeight: '800', fontSize: 16 }}>Add food to {meal}</Text>
+                <TouchableOpacity onPress={cancelForm} style={{ padding: 4 }}>
+                  <Text style={{ color: C.muted, fontSize: 20, lineHeight: 22 }}>×</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Meal tabs inside form */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                {meals.map(m => <Chip key={m} label={m.charAt(0).toUpperCase() + m.slice(1)} active={meal === m} onPress={() => setMeal(m)} small />)}
+              </View>
+
+              {/* Name */}
+              <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>Food name *</Text>
+              <TextInput style={[styles.input, { marginBottom: 12 }]} value={cName} onChangeText={setCName} placeholder="e.g. Beans, Rice, Chicken…" placeholderTextColor={C.dim} />
+
+              {/* Weight + Calories */}
+              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>Weight (g)</Text>
+                  <TextInput style={styles.input} value={cWeight} onChangeText={setCWeight} keyboardType="decimal-pad" placeholder="200" placeholderTextColor={C.dim} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>Calories (kcal)</Text>
+                  <TextInput style={styles.input} value={cCal} onChangeText={setCCal} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={C.dim} />
+                </View>
+              </View>
+
+              {/* Macros */}
+              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>Protein (g)</Text>
+                  <TextInput style={styles.input} value={cP} onChangeText={setCP} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={C.dim} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>Carbs (g)</Text>
+                  <TextInput style={styles.input} value={cC} onChangeText={setCC} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={C.dim} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>Fat (g)</Text>
+                  <TextInput style={styles.input} value={cF} onChangeText={setCF} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={C.dim} />
+                </View>
+              </View>
+
+              <TouchableOpacity onPress={submitCustom} style={{ backgroundColor: cName.trim() ? C.purple : C.elevated, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}>
+                <Text style={{ color: cName.trim() ? '#fff' : C.dim, fontWeight: '800', fontSize: 15 }}>Add to {meal}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            /* ── "Add food" button — always visible ── */
+            <TouchableOpacity onPress={() => openForm()} style={{ backgroundColor: C.purple, borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>+ Add food manually</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Logged meals */}
+          {meals.map(m => {
+            const items   = today.food_log.filter(f => f.meal === m);
+            if (!items.length) return null;
+            const mealCal = items.reduce((s, f) => s + f.cal, 0);
+            return (
+              <View key={m} style={{ marginTop: 16 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text style={{ color: C.text, fontWeight: '700', fontSize: 14 }}>{m.charAt(0).toUpperCase() + m.slice(1)}</Text>
+                  <Text style={{ color: C.purple, fontSize: 12 }}>{mealCal} kcal</Text>
+                </View>
+                {items.map(f => (
+                  <View key={f.logId} style={{ backgroundColor: C.card, borderRadius: 10, padding: 12, marginBottom: 6, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.border }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: C.text, fontSize: 13, fontWeight: '500' }}>{f.name}{f.unit && f.unit !== 'serving' ? ` (${f.unit})` : ''}</Text>
+                      <Text style={{ color: C.muted, fontSize: 11, marginTop: 2 }}>P: {f.p}g  C: {f.c}g  F: {f.f}g</Text>
+                    </View>
+                    <Text style={{ color: C.amber, fontWeight: '700', marginRight: 12 }}>{f.cal} kcal</Text>
+                    <TouchableOpacity onPress={() => onRemoveFood(f.logId)}><Text style={{ color: C.red, fontSize: 18 }}>×</Text></TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            );
+          })}
+
+          {today.food_log.length > 0 && (
+            <Card style={{ marginTop: 16 }} glow>
+              <Text style={{ color: C.muted, fontSize: 11, letterSpacing: 1, marginBottom: 8 }}>TODAY'S TOTALS</Text>
+              <Text style={{ color: C.text, fontWeight: '800', fontSize: 22 }}>{totalCal} kcal</Text>
+              <Text style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>
+                P: {Math.round(today.food_log.reduce((s,f)=>s+f.p,0))}g  ·  C: {Math.round(today.food_log.reduce((s,f)=>s+f.c,0))}g  ·  F: {Math.round(today.food_log.reduce((s,f)=>s+f.f,0))}g
+              </Text>
+            </Card>
+          )}
+        </View>
+      </ScrollView>
     </View>
-    </ScrollView>
   );
 }
 
@@ -1140,11 +1256,38 @@ function HistoryTab({ logs, workouts, loading }) {
     </View>
   );
 
+  // ── Water stats ──
+  const todayStr2  = todayISO();
+  const weekAgo    = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
+  const monthStart = todayStr2.slice(0, 7) + '-01';
+  const todayWater = (byDate[todayStr2]?.log?.water_ml) || 0;
+  const weekLogs   = logs.filter(l => l.log_date >= weekAgo);
+  const monthLogs  = logs.filter(l => l.log_date >= monthStart);
+  const weekAvg    = weekLogs.length  ? Math.round(weekLogs.reduce( (s,l) => s + (l.water_ml||0), 0) / weekLogs.length)  : 0;
+  const monthAvg   = monthLogs.length ? Math.round(monthLogs.reduce((s,l) => s + (l.water_ml||0), 0) / monthLogs.length) : 0;
+
   return (
     <ScrollView contentContainerStyle={{ padding: isDesktop ? 32 : 20, paddingBottom: isDesktop ? 40 : 100, alignItems: isDesktop ? 'center' : undefined }}>
       <View style={{ width: '100%', maxWidth: isDesktop ? 860 : undefined }}>
         <Text style={{ color: C.text, fontWeight: '800', fontSize: 22, marginBottom: 4 }}>History</Text>
-        <Text style={{ color: C.muted, fontSize: 13, marginBottom: 24 }}>Your last 30 days at a glance.</Text>
+        <Text style={{ color: C.muted, fontSize: 13, marginBottom: 16 }}>Your last 30 days at a glance.</Text>
+
+        {/* Hydration summary */}
+        <Card style={{ marginBottom: 20 }}>
+          <Text style={{ color: C.cyan, fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 12 }}>💧 HYDRATION</Text>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            {[
+              { label: 'Today',         value: `${todayWater} ml` },
+              { label: 'Weekly avg',    value: `${weekAvg} ml` },
+              { label: 'Monthly avg',   value: `${monthAvg} ml` },
+            ].map(s => (
+              <View key={s.label} style={{ flex: 1, backgroundColor: C.elevated, borderRadius: 10, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: C.border }}>
+                <Text style={{ color: C.text, fontWeight: '700', fontSize: 15 }}>{s.value}</Text>
+                <Text style={{ color: C.muted, fontSize: 10, marginTop: 3 }}>{s.label}</Text>
+              </View>
+            ))}
+          </View>
+        </Card>
         {months.map(month => (
           <View key={month} style={{ marginBottom: 24 }}>
             <Text style={{ color: C.purple, fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 10 }}>
@@ -1209,7 +1352,7 @@ function TabBar({ active, onPress, onCoach }) {
           <Text style={{ fontSize: 10, color: active === t.id ? C.purple : C.dim, marginTop: 3, fontWeight: active === t.id ? '700' : '400' }}>{t.label}</Text>
         </TouchableOpacity>
       ))}
-      <TouchableOpacity onPress={onCoach} style={{ position: 'absolute', right: 16, top: -24, width: 48, height: 48, borderRadius: 24, backgroundColor: C.purple, alignItems: 'center', justifyContent: 'center', shadowColor: C.purple, shadowOpacity: 0.6, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 8 }}>
+      <TouchableOpacity onPress={onCoach} style={{ position: 'absolute', right: 16, top: -52, width: 48, height: 48, borderRadius: 24, backgroundColor: C.purple, alignItems: 'center', justifyContent: 'center', shadowColor: C.purple, shadowOpacity: 0.6, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 8 }}>
         <Text style={{ fontSize: 22 }}>⚡</Text>
       </TouchableOpacity>
     </View>
@@ -1432,6 +1575,7 @@ export default function App() {
   };
 
   const handleFinishWorkout = async () => {
+    if (workout.completed) return; // Already completed today — don't double-count streak
     const newW  = { ...workout, completed: true };
     const saved = await saveWorkout(newW);
     setWorkout(saved || newW);
