@@ -38,6 +38,56 @@ const C = {
   subtle:       '#16163A',
 };
 
+// ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
+const STRINGS = {
+  en: {
+    navToday:'Today', navNutrition:'Nutrition', navTrain:'Train', navHistory:'History', navMe:'Me',
+    today:'Today', hydration:'HYDRATION', todaysThought:"TODAY'S THOUGHT", dailyTargets:'YOUR DAILY TARGETS',
+    nutritionLog:'Nutrition Log', breakfast:'Breakfast', lunch:'Lunch', dinner:'Dinner', snacks:'Snacks',
+    searchFood:'Search food…', addCustom:'+ Add custom food', noResults:'No results. Add it manually?',
+    customFoodName:'Food name', weightG:'Weight (g, optional)', calories:'Calories', protein:'Protein (g)',
+    carbs:'Carbs (g)', fats:'Fats (g)', save:'Save', cancel:'Cancel',
+    training:'Training', addExerciseFrom:'Add exercise from', logBtn:'Log',
+    finishWorkout:'Finish Workout', workoutDone:'✓ Listo — Tap to undo',
+    exercises:'Exercises', totalSets:'Total sets', volumeKg:'Volume kg',
+    weightHistory:'WEIGHT HISTORY', macroPlan:'MACRO PLAN', editProfile:'Edit Profile',
+    signOut:'Sign Out', settings:'Settings', logWeight:'Log', weightPlaceholder:"Today's weight (kg)",
+    settingsTitle:'Settings', language:'Language', english:'English', spanish:'Spanish',
+    changeEmail:'Change Email', newEmail:'New email address', confirmEmail:'Confirm new email',
+    changePassword:'Change Password', newPassword:'New password (min 12 chars)', confirmPassword:'Confirm new password',
+    resetPasswordEmail:'Reset Password via Email', resetSent:'Reset email sent! Check your inbox.',
+    emailUpdated:'Email update sent! Check your new inbox to confirm.',
+    passwordUpdated:'Password updated successfully!',
+    passwordMismatch:'Passwords do not match.', emailMismatch:'Emails do not match.',
+    close:'Close', aiCoach:'⚡ AI Coach', online:'● Online', askCoach:'Ask your coach…',
+    historyEmpty:'No history yet.\nStart logging to see your progress here.',
+    gotIt:'Got it!', remove:'Remove',
+  },
+  es: {
+    navToday:'Hoy', navNutrition:'Nutrición', navTrain:'Entrenar', navHistory:'Historial', navMe:'Yo',
+    today:'Hoy', hydration:'HIDRATACIÓN', todaysThought:'PENSAMIENTO DEL DÍA', dailyTargets:'TUS OBJETIVOS DIARIOS',
+    nutritionLog:'Registro de Nutrición', breakfast:'Desayuno', lunch:'Almuerzo', dinner:'Cena', snacks:'Snacks',
+    searchFood:'Buscar alimento…', addCustom:'+ Agregar alimento personalizado', noResults:'Sin resultados. ¿Agregar manualmente?',
+    customFoodName:'Nombre del alimento', weightG:'Peso (g, opcional)', calories:'Calorías', protein:'Proteína (g)',
+    carbs:'Carbohidratos (g)', fats:'Grasas (g)', save:'Guardar', cancel:'Cancelar',
+    training:'Entrenamiento', addExerciseFrom:'Agregar ejercicio de', logBtn:'Registrar',
+    finishWorkout:'Terminar Entrenamiento', workoutDone:'✓ Listo — Toca para deshacer',
+    exercises:'Ejercicios', totalSets:'Series totales', volumeKg:'Volumen kg',
+    weightHistory:'HISTORIAL DE PESO', macroPlan:'PLAN DE MACROS', editProfile:'Editar Perfil',
+    signOut:'Cerrar Sesión', settings:'Ajustes', logWeight:'Registrar', weightPlaceholder:'Peso de hoy (kg)',
+    settingsTitle:'Ajustes', language:'Idioma', english:'Inglés', spanish:'Español',
+    changeEmail:'Cambiar Email', newEmail:'Nuevo correo electrónico', confirmEmail:'Confirmar nuevo correo',
+    changePassword:'Cambiar Contraseña', newPassword:'Nueva contraseña (mín. 12 caracteres)', confirmPassword:'Confirmar nueva contraseña',
+    resetPasswordEmail:'Restablecer contraseña por Email', resetSent:'¡Email enviado! Revisa tu bandeja.',
+    emailUpdated:'¡Actualización enviada! Confirma en tu nuevo correo.',
+    passwordUpdated:'¡Contraseña actualizada correctamente!',
+    passwordMismatch:'Las contraseñas no coinciden.', emailMismatch:'Los correos no coinciden.',
+    close:'Cerrar', aiCoach:'⚡ Coach IA', online:'● En línea', askCoach:'Pregunta a tu coach…',
+    historyEmpty:'Sin historial aún.\nEmpieza a registrar para ver tu progreso.',
+    gotIt:'¡Entendido!', remove:'Eliminar',
+  },
+};
+
 // ─── DATA ────────────────────────────────────────────────────────────────────
 const ACTIVITY_LEVELS = [
   { id: 'sedentary', label: 'Sedentary',  desc: 'Desk job, little movement', factor: 1.2   },
@@ -772,7 +822,8 @@ function SetupScreen({ onComplete, userId }) {
 }
 
 // ─── TODAY TAB ────────────────────────────────────────────────────────────────
-function TodayTab({ profile, macros, today, onAddWater, onResetWater, streak }) {
+function TodayTab({ profile, macros, today, onAddWater, onResetWater, streak, lang }) {
+  const tr         = k => STRINGS[lang]?.[k] ?? STRINGS.en[k];
   const quote      = useRef(randomFrom(QUOTES)).current;
   const isDesktop  = useIsDesktop();
   const consumed   = today.food_log.reduce((s, f) => s + f.cal, 0);
@@ -799,17 +850,17 @@ function TodayTab({ profile, macros, today, onAddWater, onResetWater, streak }) 
       <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
         <StreakBadge streak={streak} />
         <Card style={{ flex: 2, marginBottom: 0 }}>
-          <Text style={{ color: C.purple, fontSize: 11, letterSpacing: 1, marginBottom: 6 }}>TODAY'S THOUGHT</Text>
+          <Text style={{ color: C.purple, fontSize: 11, letterSpacing: 1, marginBottom: 6 }}>{tr('todaysThought')}</Text>
           <Text style={{ color: C.text, fontSize: 13, lineHeight: 19, fontStyle: 'italic' }}>"{quote}"</Text>
         </Card>
       </View>
       <Card>
-        <Text style={{ color: C.cyan, fontSize: 11, letterSpacing: 1, marginBottom: 12 }}>HYDRATION</Text>
+        <Text style={{ color: C.cyan, fontSize: 11, letterSpacing: 1, marginBottom: 12 }}>{tr('hydration')}</Text>
         <WaterGlass current={today.water_ml} target={profile.water_target || 2500} onAdd={onAddWater} onReset={onResetWater} />
       </Card>
       {macros && (
         <Card>
-          <Text style={{ color: C.muted, fontSize: 11, letterSpacing: 1, marginBottom: 10 }}>YOUR DAILY TARGETS</Text>
+          <Text style={{ color: C.muted, fontSize: 11, letterSpacing: 1, marginBottom: 10 }}>{tr('dailyTargets')}</Text>
           {[
             { label: 'Calories', value: `${macros.calories} kcal`, color: C.purple },
             { label: 'Protein',  value: `${macros.protein}g`,      color: C.purple },
@@ -831,7 +882,8 @@ function TodayTab({ profile, macros, today, onAddWater, onResetWater, streak }) 
 }
 
 // ─── LOG TAB ──────────────────────────────────────────────────────────────────
-function LogTab({ today, onAddFood, onRemoveFood }) {
+function LogTab({ today, onAddFood, onRemoveFood, lang }) {
+  const tr          = k => STRINGS[lang]?.[k] ?? STRINGS.en[k];
   const [query,     setQuery]     = useState('');
   const [results,   setResults]   = useState([]);
   const [meal,      setMeal]      = useState('breakfast');
@@ -886,17 +938,17 @@ function LogTab({ today, onAddFood, onRemoveFood }) {
       >
         <View style={{ width: '100%', maxWidth: isDesktop ? 860 : undefined }}>
 
-          <Text style={{ color: C.text, fontSize: 22, fontWeight: '800', marginBottom: 16 }}>Nutrition Log</Text>
+          <Text style={{ color: C.text, fontSize: 22, fontWeight: '800', marginBottom: 16 }}>{tr('nutritionLog')}</Text>
 
           {/* Meal selector */}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 }}>
-            {meals.map(m => <Chip key={m} label={m.charAt(0).toUpperCase() + m.slice(1)} active={meal === m} onPress={() => setMeal(m)} small />)}
+            {meals.map(m => <Chip key={m} label={tr(m)} active={meal === m} onPress={() => setMeal(m)} small />)}
           </View>
 
           {/* Search bar */}
           <View style={{ backgroundColor: C.card, borderRadius: 12, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, borderWidth: 1, borderColor: C.border, marginBottom: 8 }}>
             <Text style={{ color: C.dim, marginRight: 8 }}>🔍</Text>
-            <TextInput style={{ flex: 1, color: C.text, paddingVertical: 12, fontSize: 14 }} value={query} onChangeText={search} placeholder="Search foods…" placeholderTextColor={C.dim} />
+            <TextInput style={{ flex: 1, color: C.text, paddingVertical: 12, fontSize: 14 }} value={query} onChangeText={search} placeholder={tr('searchFood')} placeholderTextColor={C.dim} />
             {query ? <TouchableOpacity onPress={() => { setQuery(''); setResults([]); }}><Text style={{ color: C.dim, fontSize: 18 }}>×</Text></TouchableOpacity> : null}
           </View>
 
@@ -932,7 +984,7 @@ function LogTab({ today, onAddFood, onRemoveFood }) {
 
               {/* Meal tabs inside form */}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                {meals.map(m => <Chip key={m} label={m.charAt(0).toUpperCase() + m.slice(1)} active={meal === m} onPress={() => setMeal(m)} small />)}
+                {meals.map(m => <Chip key={m} label={tr(m)} active={meal === m} onPress={() => setMeal(m)} small />)}
               </View>
 
               {/* Name */}
@@ -986,7 +1038,7 @@ function LogTab({ today, onAddFood, onRemoveFood }) {
             return (
               <View key={m} style={{ marginTop: 16 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <Text style={{ color: C.text, fontWeight: '700', fontSize: 14 }}>{m.charAt(0).toUpperCase() + m.slice(1)}</Text>
+                  <Text style={{ color: C.text, fontWeight: '700', fontSize: 14 }}>{tr(m)}</Text>
                   <Text style={{ color: C.purple, fontSize: 12 }}>{mealCal} kcal</Text>
                 </View>
                 {items.map(f => (
@@ -1019,7 +1071,8 @@ function LogTab({ today, onAddFood, onRemoveFood }) {
 }
 
 // ─── TRAIN TAB ────────────────────────────────────────────────────────────────
-function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExercise, onDeleteSet, onEditSet, streak }) {
+function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExercise, onDeleteSet, onEditSet, streak, lang }) {
+  const tr = k => STRINGS[lang]?.[k] ?? STRINGS.en[k];
   const [activeCategory, setActiveCategory] = useState('Push');
   const [showExercises,  setShowExercises]  = useState(false);
   const [setInputs,      setSetInputs]      = useState({});
@@ -1035,7 +1088,7 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
   return (
     <ScrollView contentContainerStyle={{ padding: isDesktop ? 32 : 12, paddingBottom: isDesktop ? 40 : 90, alignItems: isDesktop ? 'center' : undefined }}>
     <View style={{ width: '100%', maxWidth: isDesktop ? 860 : undefined }}>
-      <Text style={{ color: C.text, fontSize: isDesktop ? 22 : 18, fontWeight: '800', marginBottom: isDesktop ? 6 : 4 }}>Training</Text>
+      <Text style={{ color: C.text, fontSize: isDesktop ? 22 : 18, fontWeight: '800', marginBottom: isDesktop ? 6 : 4 }}>{tr('training')}</Text>
       <View style={{ flexDirection: 'row', gap: 6, marginBottom: isDesktop ? 20 : 10 }}>
         {days.map((d, i) => {
           const idx     = i === 6 ? 0 : i + 1;
@@ -1044,7 +1097,7 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
         })}
       </View>
       <View style={{ flexDirection: 'row', gap: isDesktop ? 12 : 8, marginBottom: isDesktop ? 16 : 8 }}>
-        {[{ label: 'Exercises', value: today.exercises.length, color: C.purple }, { label: 'Total sets', value: totalSets, color: C.cyan }, { label: 'Volume kg', value: totalVol, color: C.amber }].map(s => (
+        {[{ label: tr('exercises'), value: today.exercises.length, color: C.purple }, { label: tr('totalSets'), value: totalSets, color: C.cyan }, { label: tr('volumeKg'), value: totalVol, color: C.amber }].map(s => (
           <Card key={s.label} style={{ flex: 1, marginBottom: 0, padding: isDesktop ? 12 : 6, alignItems: 'center' }}>
             <Text style={{ color: s.color, fontWeight: '800', fontSize: isDesktop ? 22 : 15 }}>{s.value}</Text>
             <Text style={{ color: C.muted, fontSize: isDesktop ? 10 : 9, marginTop: 1 }}>{s.label}</Text>
@@ -1079,14 +1132,14 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
               </View>
             ))}
             <TouchableOpacity onPress={() => setShowHelp(false)} style={{ backgroundColor: C.purple, borderRadius: 12, padding: 12, alignItems: 'center', marginTop: 4 }}>
-              <Text style={{ color: '#fff', fontWeight: '700' }}>Got it!</Text>
+              <Text style={{ color: '#fff', fontWeight: '700' }}>{tr('gotIt')}</Text>
             </TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
       <TouchableOpacity onPress={() => setShowExercises(v => !v)} style={{ backgroundColor: C.elevated, borderRadius: 12, padding: isDesktop ? 14 : 10, marginBottom: isDesktop ? 12 : 8, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.borderBright }}>
         <Text style={{ color: C.purple, fontSize: isDesktop ? 20 : 16, marginRight: 8 }}>+</Text>
-        <Text style={{ color: C.text, fontWeight: '600', fontSize: isDesktop ? 15 : 13 }}>Add exercise from {activeCategory}</Text>
+        <Text style={{ color: C.text, fontWeight: '600', fontSize: isDesktop ? 15 : 13 }}>{tr('addExerciseFrom')} {activeCategory}</Text>
       </TouchableOpacity>
       {showExercises && (
         <Card style={{ marginBottom: 16 }}>
@@ -1146,13 +1199,13 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
             <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder="kg" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.weight||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], weight: v } }))} />
             <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder="reps" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.reps||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], reps: v } }))} />
             <TouchableOpacity onPress={() => { const inp = setInputs[ex.id]||{}; const w = Math.min(1000, Math.max(0, Number(inp.weight)||0)); const r = Math.min(9999, Math.max(0, Math.round(Number(inp.reps)||0))); onLogSet(ei, { weight: w, reps: r }); setSetInputs(p => ({ ...p, [ex.id]: {} })); }} style={{ flex: isDesktop ? undefined : 1, backgroundColor: C.purple, borderRadius: 8, paddingHorizontal: isDesktop ? 14 : 12, paddingVertical: isDesktop ? 9 : 7, alignItems: 'center' }}>
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: isDesktop ? 14 : 13 }}>Log</Text>
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: isDesktop ? 14 : 13 }}>{tr('logBtn')}</Text>
             </TouchableOpacity>
           </View>
         </Card>
       ))}
       {today.exercises.length > 0 && (
-        <Btn label={today.completed ? '✓ Done — Tap to undo' : 'Finish Workout'} onPress={onFinishWorkout} variant={today.completed ? 'secondary' : 'primary'} style={{ marginTop: 8 }} />
+        <Btn label={today.completed ? tr('workoutDone') : tr('finishWorkout')} onPress={onFinishWorkout} variant={today.completed ? 'secondary' : 'primary'} style={{ marginTop: 8 }} />
       )}
     </View>
     </ScrollView>
@@ -1160,9 +1213,11 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
 }
 
 // ─── ME TAB ───────────────────────────────────────────────────────────────────
-function MeTab({ profile, macros, weights, onAddWeight, onLogout, onEditProfile }) {
-  const [weightInput, setWeightInput] = useState('');
-  const [saving,      setSaving]      = useState(false);
+function MeTab({ profile, macros, weights, onAddWeight, onLogout, onEditProfile, lang, onChangeLang, user }) {
+  const tr = k => STRINGS[lang]?.[k] ?? STRINGS.en[k];
+  const [weightInput,   setWeightInput]   = useState('');
+  const [saving,        setSaving]        = useState(false);
+  const [showSettings,  setShowSettings]  = useState(false);
   const goalObj = GOALS.find(g => g.id === profile.goal);
   const handleAddWeight = async () => {
     if (!weightInput) return;
@@ -1208,7 +1263,7 @@ function MeTab({ profile, macros, weights, onAddWeight, onLogout, onEditProfile 
       </View>
       {macros && (
         <Card>
-          <Text style={{ color: C.muted, fontSize: 11, letterSpacing: 1, marginBottom: 10 }}>MACRO PLAN</Text>
+          <Text style={{ color: C.muted, fontSize: 11, letterSpacing: 1, marginBottom: 10 }}>{tr('macroPlan')}</Text>
           <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
             {[{ label: 'Calories', v: macros.calories, unit: 'kcal', color: C.purple }, { label: 'Protein', v: macros.protein, unit: 'g', color: C.purple }, { label: 'Carbs', v: macros.carbs, unit: 'g', color: C.cyan }, { label: 'Fats', v: macros.fats, unit: 'g', color: C.amber }].map(m => (
               <View key={m.label} style={{ alignItems: 'center' }}>
@@ -1221,25 +1276,28 @@ function MeTab({ profile, macros, weights, onAddWeight, onLogout, onEditProfile 
         </Card>
       )}
       <Card>
-        <Text style={{ color: C.muted, fontSize: 11, letterSpacing: 1, marginBottom: 12 }}>WEIGHT HISTORY</Text>
+        <Text style={{ color: C.muted, fontSize: 11, letterSpacing: 1, marginBottom: 12 }}>{tr('weightHistory')}</Text>
         <WeightChart weights={weights} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14 }}>
-          <TextInput style={[styles.input, { flex: 1, paddingVertical: 9 }]} value={weightInput} onChangeText={setWeightInput} keyboardType="decimal-pad" placeholder="Today's weight (kg)" placeholderTextColor={C.dim} />
-          <Btn label="Log" onPress={handleAddWeight} loading={saving} style={{ paddingHorizontal: 20, paddingVertical: 9 }} />
+          <TextInput style={[styles.input, { flex: 1, paddingVertical: 9 }]} value={weightInput} onChangeText={setWeightInput} keyboardType="decimal-pad" placeholder={tr('weightPlaceholder')} placeholderTextColor={C.dim} />
+          <Btn label={tr('logWeight')} onPress={handleAddWeight} loading={saving} style={{ paddingHorizontal: 20, paddingVertical: 9 }} />
         </View>
         {weights.length > 0 && <Text style={{ color: C.muted, fontSize: 11, marginTop: 8 }}>Last: {weights[weights.length-1]?.weight_kg}kg on {weights[weights.length-1]?.logged_at}</Text>}
       </Card>
       <View style={{ gap: 10 }}>
-        <Btn label="Edit Profile" onPress={onEditProfile} variant="secondary" />
-        <Btn label="Sign Out" onPress={onLogout} variant="ghost" />
+        <Btn label={tr('settings')} onPress={() => setShowSettings(true)} variant="secondary" />
+        <Btn label={tr('editProfile')} onPress={onEditProfile} variant="secondary" />
+        <Btn label={tr('signOut')} onPress={onLogout} variant="ghost" />
       </View>
+      <SettingsModal visible={showSettings} onClose={() => setShowSettings(false)} lang={lang} onChangeLang={onChangeLang} user={user} tr={tr} />
     </View>
     </ScrollView>
   );
 }
 
 // ─── AI COACH MODAL ───────────────────────────────────────────────────────────
-function CoachModal({ visible, onClose, macros }) {
+function CoachModal({ visible, onClose, macros, lang }) {
+  const tr = k => STRINGS[lang]?.[k] ?? STRINGS.en[k];
   const [messages, setMessages] = useState([{ from: 'coach', text: "Hey! I'm your PULSE coach. Ask me anything about nutrition, training, or recovery." }]);
   const [input,    setInput]    = useState('');
   const [typing,   setTyping]   = useState(false);
@@ -1259,8 +1317,8 @@ function CoachModal({ visible, onClose, macros }) {
       <View style={{ flex: 1, backgroundColor: C.bg }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20, paddingTop: 24, borderBottomWidth: 1, borderBottomColor: C.border }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: C.text, fontWeight: '800', fontSize: 18 }}>⚡ AI Coach</Text>
-            <Text style={{ color: C.green, fontSize: 11, marginTop: 2 }}>● Online</Text>
+            <Text style={{ color: C.text, fontWeight: '800', fontSize: 18 }}>{tr('aiCoach')}</Text>
+            <Text style={{ color: C.green, fontSize: 11, marginTop: 2 }}>{tr('online')}</Text>
           </View>
           <TouchableOpacity onPress={onClose} style={{ padding: 8 }}><Text style={{ color: C.muted, fontSize: 22 }}>×</Text></TouchableOpacity>
         </View>
@@ -1287,7 +1345,7 @@ function CoachModal({ visible, onClose, macros }) {
         </ScrollView>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={{ flexDirection: 'row', padding: 16, gap: 10, borderTopWidth: 1, borderTopColor: C.border }}>
-            <TextInput style={[styles.input, { flex: 1, paddingVertical: 10 }]} value={input} onChangeText={setInput} placeholder="Ask your coach…" placeholderTextColor={C.dim} onSubmitEditing={send} returnKeyType="send" />
+            <TextInput style={[styles.input, { flex: 1, paddingVertical: 10 }]} value={input} onChangeText={setInput} placeholder={tr('askCoach')} placeholderTextColor={C.dim} onSubmitEditing={send} returnKeyType="send" />
             <TouchableOpacity onPress={send} style={{ backgroundColor: C.purple, borderRadius: 12, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>↑</Text></TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -1297,7 +1355,8 @@ function CoachModal({ visible, onClose, macros }) {
 }
 
 // ─── HISTORY TAB ─────────────────────────────────────────────────────────────
-function HistoryTab({ logs, workouts, loading }) {
+function HistoryTab({ logs, workouts, loading, lang }) {
+  const tr = k => STRINGS[lang]?.[k] ?? STRINGS.en[k];
   const isDesktop = useIsDesktop();
   const byDate = {};
   logs.forEach(l  => { byDate[l.log_date]      = { ...(byDate[l.log_date]      || {}), log:     l }; });
@@ -1315,7 +1374,7 @@ function HistoryTab({ logs, workouts, loading }) {
 
   if (!dates.length) return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
-      <Text style={{ color: C.muted, fontSize: 15, textAlign: 'center' }}>No history yet.{'\n'}Start logging to see your progress here.</Text>
+      <Text style={{ color: C.muted, fontSize: 15, textAlign: 'center' }}>{tr('historyEmpty')}</Text>
     </View>
   );
 
@@ -1397,6 +1456,105 @@ function HistoryTab({ logs, workouts, loading }) {
   );
 }
 
+// ─── SETTINGS MODAL ──────────────────────────────────────────────────────────
+function SettingsModal({ visible, onClose, lang, onChangeLang, user, tr }) {
+  const [section,   setSection]   = useState(null); // 'email' | 'password' | null
+  const [newEmail,  setNewEmail]  = useState('');
+  const [confEmail, setConfEmail] = useState('');
+  const [newPass,   setNewPass]   = useState('');
+  const [confPass,  setConfPass]  = useState('');
+  const [loading,   setLoading]   = useState(false);
+  const [msg,       setMsg]       = useState('');
+
+  const reset = () => { setSection(null); setNewEmail(''); setConfEmail(''); setNewPass(''); setConfPass(''); setMsg(''); };
+
+  const handleChangeEmail = async () => {
+    if (newEmail !== confEmail) { setMsg(tr('emailMismatch')); return; }
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    setLoading(false);
+    setMsg(error ? error.message : tr('emailUpdated'));
+    if (!error) { setNewEmail(''); setConfEmail(''); }
+  };
+
+  const handleChangePassword = async () => {
+    if (newPass !== confPass) { setMsg(tr('passwordMismatch')); return; }
+    if (newPass.length < 12) { setMsg('Min 12 characters.'); return; }
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({ password: newPass });
+    setLoading(false);
+    setMsg(error ? error.message : tr('passwordUpdated'));
+    if (!error) { setNewPass(''); setConfPass(''); }
+  };
+
+  const handleResetEmail = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(user?.email);
+    setLoading(false);
+    setMsg(error ? error.message : tr('resetSent'));
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { reset(); onClose(); }}>
+      <View style={{ flex: 1, backgroundColor: C.bg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20, paddingTop: 24, borderBottomWidth: 1, borderBottomColor: C.border }}>
+          <Text style={{ color: C.text, fontWeight: '800', fontSize: 18, flex: 1 }}>{tr('settingsTitle')}</Text>
+          <TouchableOpacity onPress={() => { reset(); onClose(); }} style={{ padding: 8 }}><Text style={{ color: C.muted, fontSize: 22 }}>×</Text></TouchableOpacity>
+        </View>
+        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+
+          {/* Language */}
+          <Card style={{ marginBottom: 16 }}>
+            <Text style={{ color: C.muted, fontSize: 11, letterSpacing: 1, marginBottom: 12 }}>{tr('language').toUpperCase()}</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              {[{ code: 'en', label: tr('english') }, { code: 'es', label: tr('spanish') }].map(l => (
+                <TouchableOpacity key={l.code} onPress={() => onChangeLang(l.code)} style={{ flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center', backgroundColor: lang === l.code ? C.purple : C.elevated, borderWidth: 1, borderColor: lang === l.code ? C.purple : C.border }}>
+                  <Text style={{ color: lang === l.code ? '#fff' : C.muted, fontWeight: '700' }}>{l.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Card>
+
+          {/* Change Email */}
+          <Card style={{ marginBottom: 16 }}>
+            <TouchableOpacity onPress={() => setSection(section === 'email' ? null : 'email')} style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ color: C.text, fontWeight: '700', fontSize: 15, flex: 1 }}>{tr('changeEmail')}</Text>
+              <Text style={{ color: C.purple, fontSize: 18 }}>{section === 'email' ? '▲' : '▼'}</Text>
+            </TouchableOpacity>
+            {section === 'email' && (
+              <View style={{ marginTop: 14, gap: 10 }}>
+                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('newEmail')} placeholderTextColor={C.dim} value={newEmail} onChangeText={setNewEmail} autoCapitalize="none" keyboardType="email-address" />
+                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('confirmEmail')} placeholderTextColor={C.dim} value={confEmail} onChangeText={setConfEmail} autoCapitalize="none" keyboardType="email-address" />
+                <Btn label={tr('save')} onPress={handleChangeEmail} loading={loading} />
+              </View>
+            )}
+          </Card>
+
+          {/* Change Password */}
+          <Card style={{ marginBottom: 16 }}>
+            <TouchableOpacity onPress={() => setSection(section === 'password' ? null : 'password')} style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ color: C.text, fontWeight: '700', fontSize: 15, flex: 1 }}>{tr('changePassword')}</Text>
+              <Text style={{ color: C.purple, fontSize: 18 }}>{section === 'password' ? '▲' : '▼'}</Text>
+            </TouchableOpacity>
+            {section === 'password' && (
+              <View style={{ marginTop: 14, gap: 10 }}>
+                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('newPassword')} placeholderTextColor={C.dim} value={newPass} onChangeText={setNewPass} secureTextEntry />
+                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('confirmPassword')} placeholderTextColor={C.dim} value={confPass} onChangeText={setConfPass} secureTextEntry />
+                <Btn label={tr('save')} onPress={handleChangePassword} loading={loading} />
+                <TouchableOpacity onPress={handleResetEmail} style={{ alignItems: 'center', paddingVertical: 8 }}>
+                  <Text style={{ color: C.cyan, fontSize: 13 }}>{tr('resetPasswordEmail')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </Card>
+
+          {msg ? <Text style={{ color: C.green, fontSize: 13, textAlign: 'center', marginTop: 8 }}>{msg}</Text> : null}
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
 // ─── TAB BAR ─────────────────────────────────────────────────────────────────
 const NAV_TABS = [
   { id: 'TODAY', label: 'Today',     icon: '◎' },
@@ -1406,13 +1564,15 @@ const NAV_TABS = [
   { id: 'ME',    label: 'Me',        icon: '◉' },
 ];
 
-function TabBar({ active, onPress, onCoach }) {
+function TabBar({ active, onPress, onCoach, lang }) {
+  const tr = k => STRINGS[lang]?.[k] ?? STRINGS.en[k];
+  const navLabels = { TODAY: tr('navToday'), LOG: tr('navNutrition'), TRAIN: tr('navTrain'), HIST: tr('navHistory'), ME: tr('navMe') };
   return (
     <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.border, flexDirection: 'row', paddingBottom: Platform.OS === 'ios' ? 24 : 10, paddingTop: 10 }}>
       {NAV_TABS.map(t => (
         <TouchableOpacity key={t.id} onPress={() => onPress(t.id)} style={{ flex: 1, alignItems: 'center' }}>
           <Text style={{ fontSize: 18, color: active === t.id ? C.purple : C.dim }}>{t.icon}</Text>
-          <Text style={{ fontSize: 10, color: active === t.id ? C.purple : C.dim, marginTop: 3, fontWeight: active === t.id ? '700' : '400' }}>{t.label}</Text>
+          <Text style={{ fontSize: 10, color: active === t.id ? C.purple : C.dim, marginTop: 3, fontWeight: active === t.id ? '700' : '400' }}>{navLabels[t.id]}</Text>
         </TouchableOpacity>
       ))}
       <TouchableOpacity onPress={onCoach} style={{ position: 'absolute', right: 16, top: -52, width: 48, height: 48, borderRadius: 24, backgroundColor: C.purple, alignItems: 'center', justifyContent: 'center', shadowColor: C.purple, shadowOpacity: 0.6, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 8 }}>
@@ -1423,7 +1583,9 @@ function TabBar({ active, onPress, onCoach }) {
 }
 
 // ─── SIDEBAR (desktop) ───────────────────────────────────────────────────────
-function Sidebar({ active, onPress, onCoach, username }) {
+function Sidebar({ active, onPress, onCoach, username, lang }) {
+  const tr = k => STRINGS[lang]?.[k] ?? STRINGS.en[k];
+  const navLabels = { TODAY: tr('navToday'), LOG: tr('navNutrition'), TRAIN: tr('navTrain'), HIST: tr('navHistory'), ME: tr('navMe') };
   return (
     <View style={{ width: 240, backgroundColor: C.surface, borderRightWidth: 1, borderRightColor: C.border, paddingTop: 32, paddingBottom: 24, paddingHorizontal: 16, justifyContent: 'space-between' }}>
       <View>
@@ -1441,7 +1603,7 @@ function Sidebar({ active, onPress, onCoach, username }) {
         {NAV_TABS.map(t => (
           <TouchableOpacity key={t.id} onPress={() => onPress(t.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 12, borderRadius: 10, marginBottom: 4, backgroundColor: active === t.id ? C.elevated : 'transparent', borderWidth: active === t.id ? 1 : 0, borderColor: active === t.id ? C.border : 'transparent' }}>
             <Text style={{ fontSize: 16, color: active === t.id ? C.purple : C.dim }}>{t.icon}</Text>
-            <Text style={{ color: active === t.id ? C.text : C.muted, fontWeight: active === t.id ? '600' : '400', fontSize: 14 }}>{t.label}</Text>
+            <Text style={{ color: active === t.id ? C.text : C.muted, fontWeight: active === t.id ? '600' : '400', fontSize: 14 }}>{navLabels[t.id]}</Text>
             {active === t.id && <View style={{ flex: 1 }} />}
             {active === t.id && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: C.purple }} />}
           </TouchableOpacity>
@@ -1476,6 +1638,8 @@ export default function App() {
   const [loadingAuth,  setLoadingAuth]  = useState(true);
   const [tab,          setTab]          = useState('TODAY');
   const [coachVisible, setCoachVisible] = useState(false);
+  const [lang,         setLang]         = useState(() => { try { return (typeof localStorage !== 'undefined' && localStorage.getItem('pulse_lang')) || 'en'; } catch { return 'en'; } });
+  const handleChangeLang = (l) => { setLang(l); try { localStorage.setItem('pulse_lang', l); } catch {} };
   const isDesktop = useIsDesktop();
 
   const [profile, setProfile] = useState({ username: '', sex: 'male', age: null, height_cm: null, weight_kg: null, body_fat_pct: null, activity: 'moderate', goal: 'maintain', training_type: 'mixed', training_days: 3, diet: 'standard', sleep_hours: 7, time_frame: 3, water_target: 2500 });
@@ -1740,16 +1904,16 @@ export default function App() {
 
       {screen === SCREENS.MAIN && (
         <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column' }}>
-          {isDesktop && <Sidebar active={tab} onPress={setTab} onCoach={() => setCoachVisible(true)} username={profile.username} />}
+          {isDesktop && <Sidebar active={tab} onPress={setTab} onCoach={() => setCoachVisible(true)} username={profile.username} lang={lang} />}
           <View style={{ flex: 1 }}>
-            {tab === 'TODAY' && <TodayTab profile={profile} macros={macros} today={todayLog} onAddWater={handleAddWater} onResetWater={handleResetWater} streak={streak} />}
-            {tab === 'LOG'   && <LogTab today={todayLog} onAddFood={handleAddFood} onRemoveFood={handleRemoveFood} />}
-            {tab === 'TRAIN' && <TrainTab today={workout} onLogSet={handleLogSet} onAddExercise={handleAddExercise} onFinishWorkout={handleFinishWorkout} onDeleteExercise={handleDeleteExercise} onDeleteSet={handleDeleteSet} onEditSet={handleEditSet} streak={streak} />}
-            {tab === 'HIST'  && <HistoryTab logs={historyLogs} workouts={historyWorkouts} loading={loadingHistory} />}
-            {tab === 'ME'    && <MeTab profile={profile} macros={macros} weights={weights} onAddWeight={handleAddWeight} onLogout={handleLogout} onEditProfile={() => setScreen(SCREENS.SETUP)} />}
+            {tab === 'TODAY' && <TodayTab profile={profile} macros={macros} today={todayLog} onAddWater={handleAddWater} onResetWater={handleResetWater} streak={streak} lang={lang} />}
+            {tab === 'LOG'   && <LogTab today={todayLog} onAddFood={handleAddFood} onRemoveFood={handleRemoveFood} lang={lang} />}
+            {tab === 'TRAIN' && <TrainTab today={workout} onLogSet={handleLogSet} onAddExercise={handleAddExercise} onFinishWorkout={handleFinishWorkout} onDeleteExercise={handleDeleteExercise} onDeleteSet={handleDeleteSet} onEditSet={handleEditSet} streak={streak} lang={lang} />}
+            {tab === 'HIST'  && <HistoryTab logs={historyLogs} workouts={historyWorkouts} loading={loadingHistory} lang={lang} />}
+            {tab === 'ME'    && <MeTab profile={profile} macros={macros} weights={weights} onAddWeight={handleAddWeight} onLogout={handleLogout} onEditProfile={() => setScreen(SCREENS.SETUP)} lang={lang} onChangeLang={handleChangeLang} user={user} />}
           </View>
-          {!isDesktop && <TabBar active={tab} onPress={setTab} onCoach={() => setCoachVisible(true)} />}
-          <CoachModal visible={coachVisible} onClose={() => setCoachVisible(false)} macros={macros} />
+          {!isDesktop && <TabBar active={tab} onPress={setTab} onCoach={() => setCoachVisible(true)} lang={lang} />}
+          <CoachModal visible={coachVisible} onClose={() => setCoachVisible(false)} macros={macros} lang={lang} />
         </View>
       )}
     </SafeAreaView>
