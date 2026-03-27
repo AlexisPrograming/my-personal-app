@@ -1044,9 +1044,9 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
       </View>
       <View style={{ flexDirection: 'row', gap: isDesktop ? 12 : 8, marginBottom: isDesktop ? 16 : 8 }}>
         {[{ label: 'Exercises', value: today.exercises.length, color: C.purple }, { label: 'Total sets', value: totalSets, color: C.cyan }, { label: 'Volume kg', value: totalVol, color: C.amber }].map(s => (
-          <Card key={s.label} style={{ flex: 1, marginBottom: 0, padding: isDesktop ? 12 : 8, alignItems: 'center' }}>
-            <Text style={{ color: s.color, fontWeight: '800', fontSize: isDesktop ? 22 : 17 }}>{s.value}</Text>
-            <Text style={{ color: C.muted, fontSize: 9, marginTop: 1 }}>{s.label}</Text>
+          <Card key={s.label} style={{ flex: 1, marginBottom: 0, padding: isDesktop ? 12 : 6, alignItems: 'center' }}>
+            <Text style={{ color: s.color, fontWeight: '800', fontSize: isDesktop ? 22 : 15 }}>{s.value}</Text>
+            <Text style={{ color: C.muted, fontSize: isDesktop ? 10 : 9, marginTop: 1 }}>{s.label}</Text>
           </Card>
         ))}
       </View>
@@ -1074,6 +1074,9 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
         <Card key={ei} style={{ marginBottom: isDesktop ? 10 : 7, padding: isDesktop ? undefined : 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: isDesktop ? 10 : 6 }}>
             <Text style={{ color: C.text, fontWeight: '700', fontSize: isDesktop ? 14 : 13, flex: 1 }}>{ex.name}</Text>
+            <View style={{ backgroundColor: C.elevated, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, marginRight: 8, borderWidth: 1, borderColor: C.border }}>
+              <Text style={{ color: C.cyan, fontSize: 11, fontWeight: '700' }}>{ex.sets.length} sets</Text>
+            </View>
             <TouchableOpacity onPress={() => onDeleteExercise(ei)} style={{ paddingHorizontal: 8, paddingVertical: 2 }}>
               <Text style={{ color: C.red, fontSize: 16 }}>✕</Text>
             </TouchableOpacity>
