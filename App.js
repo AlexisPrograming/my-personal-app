@@ -48,7 +48,7 @@ const STRINGS = {
     customFoodName:'Food name', weightG:'Weight (g, optional)', calories:'Calories', protein:'Protein (g)',
     carbs:'Carbs (g)', fats:'Fats (g)', save:'Save', cancel:'Cancel',
     training:'Training', addExerciseFrom:'Add exercise from', logBtn:'Log',
-    finishWorkout:'Finish Workout', workoutDone:'✓ Listo — Tap to undo',
+    finishWorkout:'Finish Workout', workoutDone:'✓ Done — Tap to undo',
     exercises:'Exercises', totalSets:'Total sets', volumeKg:'Volume kg',
     weightHistory:'WEIGHT HISTORY', macroPlan:'MACRO PLAN', editProfile:'Edit Profile',
     signOut:'Sign Out', settings:'Settings', logWeight:'Log', weightPlaceholder:"Today's weight (kg)",
@@ -62,6 +62,72 @@ const STRINGS = {
     close:'Close', aiCoach:'⚡ AI Coach', online:'● Online', askCoach:'Ask your coach…',
     historyEmpty:'No history yet.\nStart logging to see your progress here.',
     gotIt:'Got it!', remove:'Remove',
+    // Greetings
+    greeting_early:'Up early', greeting_morning:'Good morning', greeting_afternoon:'Good afternoon',
+    greeting_evening:'Good evening', greeting_night:'Night owl',
+    // Macro labels
+    macroProtein:'Protein', macroCarbs:'Carbs', macroFats:'Fats', macroCalories:'Calories',
+    labelBmr:'BMR', labelTdee:'TDEE', todaysTotals:"TODAY'S TOTALS",
+    // Exercise categories
+    cat_push:'Push', cat_pull:'Pull', cat_legs:'Legs', cat_core:'Core', cat_cardio:'Cardio',
+    // Food form
+    addFoodTo:'Add food to', addTo:'Add to', addFoodManually:'+ Add food manually',
+    foodNameRequired:'Food name *', weightGLabel:'Weight (g)', caloriesKcalLabel:'Calories (kcal)',
+    proteinGLabel:'Protein (g)', carbsGLabel:'Carbs (g)', fatGLabel:'Fat (g)',
+    notFoundAddManually:'not found — add it manually',
+    // Help modal
+    helpTitle:'⚡ How to use Training',
+    help1title:'Pick a category', help1desc:'Choose Push, Pull, Legs, Core or Cardio to browse exercises.',
+    help2title:'Add an exercise', help2desc:'Tap "+ Add exercise" and select one from the list.',
+    help3title:'Log a set', help3desc:'Enter the weight in kg and the number of reps, then tap Log. Repeat for each set.',
+    help4title:'Edit or delete', help4desc:"Tap ✏ to fix a set's weight or reps. Tap ✕ on a set to delete it, or ✕ next to the exercise name to remove the whole exercise.",
+    help5title:'Finish', help5desc:"When you're done, tap \"Finish Workout\" to save your session and add to your streak.",
+    // Setup
+    setup_step:'STEP', setup_of:'OF',
+    setup_steps_0:'Goal', setup_steps_1:'Body', setup_steps_2:'Training', setup_steps_3:'Preferences',
+    setup_goal_title:"What's your main goal?", setup_goal_sub:'This shapes your entire nutrition and training plan.',
+    setup_body_title:'Your body data', setup_body_sub:'Used to calculate your personal calorie and macro targets.',
+    setup_act_title:'Activity & training', setup_act_sub:'Determines your TDEE — calories you actually burn each day.',
+    setup_prefs_title:'Preferences', setup_prefs_sub:'Fine-tune your plan to match your lifestyle.',
+    setup_bioSex:'Biological sex', setup_male:'Male', setup_female:'Female',
+    setup_age:'Age', setup_heightCm:'Height (cm)', setup_weightKg:'Weight (kg)',
+    setup_bodyFat:'Body fat %', setup_optional:'optional',
+    setup_actLevel:'Daily activity level', setup_trainStyle:'Training style',
+    setup_trainDays:'Training days per week', setup_dietStyle:'Diet style',
+    setup_sleepH:'Sleep (hours)', setup_timeFrame:'Time frame (months)',
+    setup_waterTarget:'Daily water target (ml)', setup_macroPreview:'Your macro preview',
+    setup_fillBody:'Fill in body data to see the preview.',
+    setup_back:'Back', setup_continue:'Continue →', setup_buildPlan:'Build My Plan →',
+    // Goals
+    goal_lose_label:'Lose Fat', goal_lose_desc:'Caloric deficit + high protein',
+    goal_maintain_label:'Maintain', goal_maintain_desc:'Hold your weight & energy',
+    goal_gain_label:'Build Muscle', goal_gain_desc:'Caloric surplus + progressive load',
+    goal_recomp_label:'Recomposition', goal_recomp_desc:'Lose fat and gain muscle at once',
+    // Activity levels
+    act_sedentary_label:'Sedentary', act_sedentary_desc:'Desk job, little movement',
+    act_light_label:'Light', act_light_desc:'1–3 workouts / week',
+    act_moderate_label:'Moderate', act_moderate_desc:'3–5 workouts / week',
+    act_active_label:'Active', act_active_desc:'6–7 workouts / week',
+    act_athlete_label:'Athlete', act_athlete_desc:'Two-a-days / heavy labor',
+    // Diet / training types
+    tt_standard:'Standard', tt_highprotein:'High Protein', tt_lowcarb:'Low Carb',
+    tt_keto:'Keto', tt_vegan:'Vegan', tt_vegetarian:'Vegetarian',
+    tt_weights:'Weights', tt_cardio:'Cardio', tt_hiit:'HIIT', tt_mixed:'Mixed', tt_calisthenics:'Calisthenics',
+    // Welcome
+    welcome_tagline:'Your intelligent fitness companion.\nTrack nutrition, training, and progress.\nBuilt for results.',
+    welcome_tagline_short:'Your intelligent fitness companion.\nTrack nutrition, training, and progress.',
+    welcome_getStarted:'Get Started', welcome_haveAccount:'I already have an account',
+    welcome_startTitle:'Get started', welcome_startSub:'Start your transformation today.',
+    welcome_createAccount:'Create Account', welcome_signIn:'Sign In',
+    welcome_smartMacros:'Smart Macros', welcome_trainingLogs:'Training Logs', welcome_aiCoaching:'AI Coaching',
+    welcome_powered:'Personalized nutrition & training plans\npowered by your body data.',
+    // Auth
+    auth_createTitle:'Create account', auth_welcomeBack:'Welcome back',
+    auth_startTransform:'Start your transformation today.', auth_continueJourney:'Continue your journey.',
+    auth_signUp:'Sign Up', auth_signIn:'Sign In',
+    auth_username:'Username', auth_email:'Email', auth_password:'Password',
+    auth_minPassword:'Min. 12 characters', auth_back:'← Back',
+    auth_createBtn:'Create Account', auth_signInBtn:'Sign In',
   },
   es: {
     navToday:'Hoy', navNutrition:'Nutrición', navTrain:'Entrenar', navHistory:'Historial', navMe:'Yo',
@@ -85,6 +151,72 @@ const STRINGS = {
     close:'Cerrar', aiCoach:'⚡ Coach IA', online:'● En línea', askCoach:'Pregunta a tu coach…',
     historyEmpty:'Sin historial aún.\nEmpieza a registrar para ver tu progreso.',
     gotIt:'¡Entendido!', remove:'Eliminar',
+    // Greetings
+    greeting_early:'Madrugador', greeting_morning:'Buenos días', greeting_afternoon:'Buenas tardes',
+    greeting_evening:'Buenas noches', greeting_night:'Noctámbulo',
+    // Macro labels
+    macroProtein:'Proteína', macroCarbs:'Carbohidratos', macroFats:'Grasas', macroCalories:'Calorías',
+    labelBmr:'TMB', labelTdee:'TDEE', todaysTotals:'TOTALES DE HOY',
+    // Exercise categories
+    cat_push:'Empujar', cat_pull:'Jalar', cat_legs:'Piernas', cat_core:'Core', cat_cardio:'Cardio',
+    // Food form
+    addFoodTo:'Agregar alimento a', addTo:'Agregar a', addFoodManually:'+ Agregar alimento manualmente',
+    foodNameRequired:'Nombre del alimento *', weightGLabel:'Peso (g)', caloriesKcalLabel:'Calorías (kcal)',
+    proteinGLabel:'Proteína (g)', carbsGLabel:'Carbohidratos (g)', fatGLabel:'Grasa (g)',
+    notFoundAddManually:'no encontrado — agregar manualmente',
+    // Help modal
+    helpTitle:'⚡ Cómo usar Entrenamiento',
+    help1title:'Elige una categoría', help1desc:'Selecciona Empujar, Jalar, Piernas, Core o Cardio para ver ejercicios.',
+    help2title:'Agrega un ejercicio', help2desc:'Toca "+ Agregar ejercicio" y selecciona uno de la lista.',
+    help3title:'Registra una serie', help3desc:'Ingresa el peso en kg y las repeticiones, luego toca Registrar. Repite para cada serie.',
+    help4title:'Editar o eliminar', help4desc:'Toca ✏ para corregir el peso o las reps. Toca ✕ en una serie para eliminarla, o ✕ junto al ejercicio para quitarlo completo.',
+    help5title:'Terminar', help5desc:'Cuando hayas terminado, toca "Terminar Entrenamiento" para guardar tu sesión y sumar a tu racha.',
+    // Setup
+    setup_step:'PASO', setup_of:'DE',
+    setup_steps_0:'Meta', setup_steps_1:'Cuerpo', setup_steps_2:'Entrenamiento', setup_steps_3:'Preferencias',
+    setup_goal_title:'¿Cuál es tu objetivo principal?', setup_goal_sub:'Esto define tu plan de nutrición y entrenamiento.',
+    setup_body_title:'Tus datos corporales', setup_body_sub:'Usados para calcular tus objetivos de calorías y macros.',
+    setup_act_title:'Actividad y entrenamiento', setup_act_sub:'Determina tu TDEE — las calorías que quemas cada día.',
+    setup_prefs_title:'Preferencias', setup_prefs_sub:'Ajusta tu plan a tu estilo de vida.',
+    setup_bioSex:'Sexo biológico', setup_male:'Masculino', setup_female:'Femenino',
+    setup_age:'Edad', setup_heightCm:'Altura (cm)', setup_weightKg:'Peso (kg)',
+    setup_bodyFat:'% de grasa corporal', setup_optional:'opcional',
+    setup_actLevel:'Nivel de actividad diaria', setup_trainStyle:'Estilo de entrenamiento',
+    setup_trainDays:'Días de entrenamiento por semana', setup_dietStyle:'Estilo de dieta',
+    setup_sleepH:'Horas de sueño', setup_timeFrame:'Plazo (meses)',
+    setup_waterTarget:'Meta de agua diaria (ml)', setup_macroPreview:'Vista previa de tus macros',
+    setup_fillBody:'Completa los datos corporales para ver la vista previa.',
+    setup_back:'Atrás', setup_continue:'Continuar →', setup_buildPlan:'Crear Mi Plan →',
+    // Goals
+    goal_lose_label:'Perder Grasa', goal_lose_desc:'Déficit calórico + alta proteína',
+    goal_maintain_label:'Mantener', goal_maintain_desc:'Mantén tu peso y energía',
+    goal_gain_label:'Ganar Músculo', goal_gain_desc:'Superávit calórico + carga progresiva',
+    goal_recomp_label:'Recomposición', goal_recomp_desc:'Perder grasa y ganar músculo al mismo tiempo',
+    // Activity levels
+    act_sedentary_label:'Sedentario', act_sedentary_desc:'Trabajo de escritorio, poco movimiento',
+    act_light_label:'Ligero', act_light_desc:'1–3 entrenamientos / semana',
+    act_moderate_label:'Moderado', act_moderate_desc:'3–5 entrenamientos / semana',
+    act_active_label:'Activo', act_active_desc:'6–7 entrenamientos / semana',
+    act_athlete_label:'Atleta', act_athlete_desc:'Doble sesión / trabajo pesado',
+    // Diet / training types
+    tt_standard:'Estándar', tt_highProtein:'Alta Proteína', tt_lowCarb:'Bajo en Carbohidratos',
+    tt_keto:'Keto', tt_vegan:'Vegano', tt_vegetarian:'Vegetariano',
+    tt_weights:'Pesas', tt_cardio:'Cardio', tt_hiit:'HIIT', tt_mixed:'Mixto', tt_calisthenics:'Calistenia',
+    // Welcome
+    welcome_tagline:'Tu compañero inteligente de fitness.\nRegistra nutrición, entrenamiento y progreso.\nHecho para resultados.',
+    welcome_tagline_short:'Tu compañero inteligente de fitness.\nRegistra nutrición, entrenamiento y progreso.',
+    welcome_getStarted:'Comenzar', welcome_haveAccount:'Ya tengo una cuenta',
+    welcome_startTitle:'Empieza hoy', welcome_startSub:'Comienza tu transformación hoy.',
+    welcome_createAccount:'Crear Cuenta', welcome_signIn:'Iniciar Sesión',
+    welcome_smartMacros:'Macros Inteligentes', welcome_trainingLogs:'Registro de Entrenos', welcome_aiCoaching:'Coach IA',
+    welcome_powered:'Planes de nutrición y entrenamiento personalizados\nbasados en tus datos corporales.',
+    // Auth
+    auth_createTitle:'Crear cuenta', auth_welcomeBack:'Bienvenido de vuelta',
+    auth_startTransform:'Comienza tu transformación hoy.', auth_continueJourney:'Continúa tu camino.',
+    auth_signUp:'Registrarse', auth_signIn:'Iniciar Sesión',
+    auth_username:'Nombre de usuario', auth_email:'Correo electrónico', auth_password:'Contraseña',
+    auth_minPassword:'Mín. 12 caracteres', auth_back:'← Atrás',
+    auth_createBtn:'Crear Cuenta', auth_signInBtn:'Iniciar Sesión',
   },
 };
 
@@ -226,17 +358,14 @@ function calcMacros({ weight, height, age, sex, goal, activity }) {
   return { bmr: Math.round(bmr), tdee, calories, protein, carbs, fats };
 }
 
-function getGreeting() {
+function getGreeting(lang) {
   const h = new Date().getHours();
-  if (h < 5)  return 'Up early';
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  if (h < 21) return 'Good evening';
-  return 'Night owl';
+  const key = h < 5 ? 'greeting_early' : h < 12 ? 'greeting_morning' : h < 17 ? 'greeting_afternoon' : h < 21 ? 'greeting_evening' : 'greeting_night';
+  return STRINGS[lang]?.[key] ?? STRINGS.en[key];
 }
 
 function todayISO() { return new Date().toISOString().slice(0, 10); }
-function todayStr()  { return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }); }
+function todayStr(lang)  { const locale = lang === 'es' ? 'es-ES' : 'en-US'; return new Date().toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' }); }
 function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 function getCoachReply(msg, macros) {
@@ -442,7 +571,8 @@ function WeightChart({ weights }) {
 }
 
 // ─── WELCOME SCREEN ───────────────────────────────────────────────────────────
-function WelcomeScreen({ onGetStarted, onSignIn }) {
+function WelcomeScreen({ onGetStarted, onSignIn, lang = 'en' }) {
+  const tr = k => STRINGS[lang]?.[k] ?? STRINGS.en[k];
   const isDesktop = useIsDesktop();
   const glow  = useRef(new Animated.Value(0)).current;
   const fade  = useRef(new Animated.Value(0)).current;
@@ -472,9 +602,9 @@ function WelcomeScreen({ onGetStarted, onSignIn }) {
             </View>
             <Text style={{ color: C.text, fontSize: 64, fontWeight: '800', letterSpacing: -2 }}>PULSE</Text>
             <Text style={{ color: C.purple, fontSize: 14, letterSpacing: 5, marginTop: 6 }}>HEALTH COACH</Text>
-            <Text style={{ color: C.muted, fontSize: 17, textAlign: 'center', marginTop: 24, lineHeight: 28, maxWidth: 360 }}>Your intelligent fitness companion.{'\n'}Track nutrition, training, and progress.{'\n'}Built for results.</Text>
+            <Text style={{ color: C.muted, fontSize: 17, textAlign: 'center', marginTop: 24, lineHeight: 28, maxWidth: 360 }}>{tr('welcome_tagline')}</Text>
             <View style={{ flexDirection: 'row', gap: 16, marginTop: 40 }}>
-              {[{ icon: '◈', label: 'Smart Macros' }, { icon: '△', label: 'Training Logs' }, { icon: '⚡', label: 'AI Coaching' }].map(f => (
+              {[{ icon: '◈', label: tr('welcome_smartMacros') }, { icon: '△', label: tr('welcome_trainingLogs') }, { icon: '⚡', label: tr('welcome_aiCoaching') }].map(f => (
                 <View key={f.label} style={{ alignItems: 'center', backgroundColor: C.card, borderRadius: 14, padding: 18, borderWidth: 1, borderColor: C.border, minWidth: 100 }}>
                   <Text style={{ fontSize: 22, color: C.purple, marginBottom: 6 }}>{f.icon}</Text>
                   <Text style={{ color: C.muted, fontSize: 12 }}>{f.label}</Text>
@@ -486,14 +616,14 @@ function WelcomeScreen({ onGetStarted, onSignIn }) {
         {/* Right panel - auth card */}
         <View style={{ width: 440, backgroundColor: C.surface, borderLeftWidth: 1, borderLeftColor: C.border, alignItems: 'center', justifyContent: 'center', padding: 48 }}>
           <Animated.View style={{ width: '100%', opacity: fade, transform: [{ translateY: slide }] }}>
-            <Text style={{ color: C.text, fontSize: 28, fontWeight: '800', marginBottom: 6 }}>Get started</Text>
-            <Text style={{ color: C.muted, fontSize: 14, marginBottom: 36 }}>Start your transformation today.</Text>
+            <Text style={{ color: C.text, fontSize: 28, fontWeight: '800', marginBottom: 6 }}>{tr('welcome_startTitle')}</Text>
+            <Text style={{ color: C.muted, fontSize: 14, marginBottom: 36 }}>{tr('welcome_startSub')}</Text>
             <View style={{ gap: 12 }}>
-              <Btn label="Create Account" onPress={onGetStarted} />
-              <Btn label="Sign In" onPress={onSignIn} variant="secondary" />
+              <Btn label={tr('welcome_createAccount')} onPress={onGetStarted} />
+              <Btn label={tr('welcome_signIn')} onPress={onSignIn} variant="secondary" />
             </View>
             <Text style={{ color: C.dim, fontSize: 12, textAlign: 'center', marginTop: 28 }}>
-              Personalized nutrition & training plans{'\n'}powered by your body data.
+              {tr('welcome_powered')}
             </Text>
           </Animated.View>
         </View>
@@ -510,10 +640,10 @@ function WelcomeScreen({ onGetStarted, onSignIn }) {
         </View>
         <Text style={{ color: C.text, fontSize: 42, fontWeight: '800', letterSpacing: -1, textAlign: 'center' }}>PULSE</Text>
         <Text style={{ color: C.purple, fontSize: 13, letterSpacing: 3, marginTop: 4 }}>HEALTH COACH</Text>
-        <Text style={{ color: C.muted, fontSize: 15, textAlign: 'center', marginTop: 20, lineHeight: 22 }}>Your intelligent fitness companion.{'\n'}Track nutrition, training, and progress.</Text>
+        <Text style={{ color: C.muted, fontSize: 15, textAlign: 'center', marginTop: 20, lineHeight: 22 }}>{tr('welcome_tagline_short')}</Text>
         <View style={{ width: '100%', marginTop: 48, gap: 12 }}>
-          <Btn label="Get Started" onPress={onGetStarted} />
-          <Btn label="I already have an account" onPress={onSignIn} variant="secondary" />
+          <Btn label={tr('welcome_getStarted')} onPress={onGetStarted} />
+          <Btn label={tr('welcome_haveAccount')} onPress={onSignIn} variant="secondary" />
         </View>
       </Animated.View>
     </View>
@@ -521,7 +651,8 @@ function WelcomeScreen({ onGetStarted, onSignIn }) {
 }
 
 // ─── AUTH SCREEN ──────────────────────────────────────────────────────────────
-function AuthScreen({ onBack, initialMode = 'signup' }) {
+function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
+  const tr = k => STRINGS[lang]?.[k] ?? STRINGS.en[k];
   const [mode,     setMode]     = useState(initialMode);
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
@@ -575,33 +706,33 @@ function AuthScreen({ onBack, initialMode = 'signup' }) {
   const formContent = (
     <>
       <TouchableOpacity onPress={onBack} style={{ marginBottom: 28 }}>
-        <Text style={{ color: C.muted, fontSize: 14 }}>← Back</Text>
+        <Text style={{ color: C.muted, fontSize: 14 }}>{tr('auth_back')}</Text>
       </TouchableOpacity>
-      <Text style={{ color: C.text, fontSize: 28, fontWeight: '800', marginBottom: 6 }}>{mode === 'signup' ? 'Create account' : 'Welcome back'}</Text>
-      <Text style={{ color: C.muted, fontSize: 14, marginBottom: 28 }}>{mode === 'signup' ? 'Start your transformation today.' : 'Continue your journey.'}</Text>
+      <Text style={{ color: C.text, fontSize: 28, fontWeight: '800', marginBottom: 6 }}>{mode === 'signup' ? tr('auth_createTitle') : tr('auth_welcomeBack')}</Text>
+      <Text style={{ color: C.muted, fontSize: 14, marginBottom: 28 }}>{mode === 'signup' ? tr('auth_startTransform') : tr('auth_continueJourney')}</Text>
       <View style={{ flexDirection: 'row', backgroundColor: C.card, borderRadius: 10, padding: 4, marginBottom: 24 }}>
         {['signup', 'signin'].map(m => (
           <TouchableOpacity key={m} onPress={() => setMode(m)} style={{ flex: 1, paddingVertical: 9, borderRadius: 8, alignItems: 'center', backgroundColor: mode === m ? C.purple : 'transparent' }}>
-            <Text style={{ color: mode === m ? '#fff' : C.dim, fontWeight: '600', fontSize: 13 }}>{m === 'signup' ? 'Sign Up' : 'Sign In'}</Text>
+            <Text style={{ color: mode === m ? '#fff' : C.dim, fontWeight: '600', fontSize: 13 }}>{m === 'signup' ? tr('auth_signUp') : tr('auth_signIn')}</Text>
           </TouchableOpacity>
         ))}
       </View>
       {mode === 'signup' && (
         <View style={{ marginBottom: 14 }}>
-          <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Username</Text>
+          <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('auth_username')}</Text>
           <TextInput style={styles.input} value={username} onChangeText={setUsername} autoCapitalize="none" placeholder="e.g. alexfit" placeholderTextColor={C.dim} />
         </View>
       )}
       <View style={{ marginBottom: 14 }}>
-        <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Email</Text>
+        <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('auth_email')}</Text>
         <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" placeholderTextColor={C.dim} />
       </View>
       <View style={{ marginBottom: 24 }}>
-        <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Password</Text>
-        <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry placeholder="Min. 12 characters" placeholderTextColor={C.dim} />
+        <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('auth_password')}</Text>
+        <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry placeholder={tr('auth_minPassword')} placeholderTextColor={C.dim} />
       </View>
       {error ? <Text style={{ color: C.red, fontSize: 13, marginBottom: 16, textAlign: 'center' }}>{error}</Text> : null}
-      <Btn label={mode === 'signup' ? 'Create Account' : 'Sign In'} onPress={submit} loading={loading} />
+      <Btn label={mode === 'signup' ? tr('auth_createBtn') : tr('auth_signInBtn')} onPress={submit} loading={loading} />
     </>
   );
 
@@ -625,7 +756,8 @@ function AuthScreen({ onBack, initialMode = 'signup' }) {
 }
 
 // ─── SETUP FLOW ───────────────────────────────────────────────────────────────
-function SetupScreen({ onComplete, userId }) {
+function SetupScreen({ onComplete, userId, lang = 'en' }) {
+  const tr = k => STRINGS[lang]?.[k] ?? STRINGS.en[k];
   const [step,         setStep]         = useState(0);
   const slideAnim                       = useRef(new Animated.Value(0)).current;
   const [goal,         setGoal]         = useState('maintain');
@@ -702,7 +834,7 @@ function SetupScreen({ onComplete, userId }) {
     } finally { setSaving(false); }
   };
 
-  const STEPS = ['Goal', 'Body', 'Training', 'Preferences'];
+  const STEPS = [tr('setup_steps_0'), tr('setup_steps_1'), tr('setup_steps_2'), tr('setup_steps_3')];
 
   const isDesktop = useIsDesktop();
   const maxW = isDesktop ? 640 : undefined;
@@ -713,7 +845,7 @@ function SetupScreen({ onComplete, userId }) {
           {STEPS.map((_, i) => <View key={i} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: i <= step ? C.purple : C.subtle }} />)}
         </View>
         <View style={{ maxWidth: maxW, alignSelf: isDesktop ? 'center' : undefined, width: '100%' }}>
-          <Text style={{ color: C.dim, fontSize: 12, letterSpacing: 1.5 }}>STEP {step + 1} OF {STEPS.length}</Text>
+          <Text style={{ color: C.dim, fontSize: 12, letterSpacing: 1.5 }}>{tr('setup_step')} {step + 1} {tr('setup_of')} {STEPS.length}</Text>
           <Text style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{STEPS[step]}</Text>
         </View>
       </View>
@@ -723,16 +855,16 @@ function SetupScreen({ onComplete, userId }) {
 
         {step === 0 && (
           <View>
-            <Text style={{ color: C.text, fontSize: 26, fontWeight: '800', marginBottom: 6 }}>What's your main goal?</Text>
-            <Text style={{ color: C.muted, fontSize: 14, marginBottom: 24 }}>This shapes your entire nutrition and training plan.</Text>
+            <Text style={{ color: C.text, fontSize: 26, fontWeight: '800', marginBottom: 6 }}>{tr('setup_goal_title')}</Text>
+            <Text style={{ color: C.muted, fontSize: 14, marginBottom: 24 }}>{tr('setup_goal_sub')}</Text>
             {GOALS.map(g => (
               <TouchableOpacity key={g.id} onPress={() => setGoal(g.id)} style={{ backgroundColor: goal === g.id ? C.card : C.surface, borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1.5, borderColor: goal === g.id ? g.color : C.border, flexDirection: 'row', alignItems: 'center' }}>
                 <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: goal === g.id ? g.color : C.elevated, alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
                   <Text style={{ fontSize: 18, color: '#fff' }}>{g.icon}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: C.text, fontWeight: '700', fontSize: 15 }}>{g.label}</Text>
-                  <Text style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{g.desc}</Text>
+                  <Text style={{ color: C.text, fontWeight: '700', fontSize: 15 }}>{tr('goal_' + g.id + '_label')}</Text>
+                  <Text style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{tr('goal_' + g.id + '_desc')}</Text>
                 </View>
                 {goal === g.id && <Text style={{ color: g.color, fontSize: 18 }}>✓</Text>}
               </TouchableOpacity>
@@ -742,78 +874,78 @@ function SetupScreen({ onComplete, userId }) {
 
         {step === 1 && (
           <View>
-            <Text style={{ color: C.text, fontSize: 26, fontWeight: '800', marginBottom: 6 }}>Your body data</Text>
-            <Text style={{ color: C.muted, fontSize: 14, marginBottom: 24 }}>Used to calculate your personal calorie and macro targets.</Text>
-            <Text style={{ color: C.muted, fontSize: 12, marginBottom: 8 }}>Biological sex</Text>
+            <Text style={{ color: C.text, fontSize: 26, fontWeight: '800', marginBottom: 6 }}>{tr('setup_body_title')}</Text>
+            <Text style={{ color: C.muted, fontSize: 14, marginBottom: 24 }}>{tr('setup_body_sub')}</Text>
+            <Text style={{ color: C.muted, fontSize: 12, marginBottom: 8 }}>{tr('setup_bioSex')}</Text>
             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
-              {['male', 'female'].map(s => <Chip key={s} label={s === 'male' ? 'Male' : 'Female'} active={sex === s} onPress={() => setSex(s)} />)}
+              {['male', 'female'].map(s => <Chip key={s} label={s === 'male' ? tr('setup_male') : tr('setup_female')} active={sex === s} onPress={() => setSex(s)} />)}
             </View>
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Age</Text><TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="number-pad" placeholder="e.g. 28" placeholderTextColor={C.dim} /></View>
-              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Height (cm)</Text><TextInput style={styles.input} value={height} onChangeText={setHeight} keyboardType="number-pad" placeholder="e.g. 175" placeholderTextColor={C.dim} /></View>
+              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_age')}</Text><TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="number-pad" placeholder="e.g. 28" placeholderTextColor={C.dim} /></View>
+              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_heightCm')}</Text><TextInput style={styles.input} value={height} onChangeText={setHeight} keyboardType="number-pad" placeholder="e.g. 175" placeholderTextColor={C.dim} /></View>
             </View>
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Weight (kg)</Text><TextInput style={styles.input} value={weight} onChangeText={setWeight} keyboardType="number-pad" placeholder="e.g. 75" placeholderTextColor={C.dim} /></View>
-              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Body fat % <Text style={{ color: C.dim }}>(optional)</Text></Text><TextInput style={styles.input} value={bodyFat} onChangeText={setBodyFat} keyboardType="number-pad" placeholder="e.g. 18" placeholderTextColor={C.dim} /></View>
+              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_weightKg')}</Text><TextInput style={styles.input} value={weight} onChangeText={setWeight} keyboardType="number-pad" placeholder="e.g. 75" placeholderTextColor={C.dim} /></View>
+              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_bodyFat')} <Text style={{ color: C.dim }}>({tr('setup_optional')})</Text></Text><TextInput style={styles.input} value={bodyFat} onChangeText={setBodyFat} keyboardType="number-pad" placeholder="e.g. 18" placeholderTextColor={C.dim} /></View>
             </View>
           </View>
         )}
 
         {step === 2 && (
           <View>
-            <Text style={{ color: C.text, fontSize: 26, fontWeight: '800', marginBottom: 6 }}>Activity & training</Text>
-            <Text style={{ color: C.muted, fontSize: 14, marginBottom: 24 }}>Determines your TDEE — calories you actually burn each day.</Text>
-            <Text style={{ color: C.muted, fontSize: 12, marginBottom: 8 }}>Daily activity level</Text>
+            <Text style={{ color: C.text, fontSize: 26, fontWeight: '800', marginBottom: 6 }}>{tr('setup_act_title')}</Text>
+            <Text style={{ color: C.muted, fontSize: 14, marginBottom: 24 }}>{tr('setup_act_sub')}</Text>
+            <Text style={{ color: C.muted, fontSize: 12, marginBottom: 8 }}>{tr('setup_actLevel')}</Text>
             {ACTIVITY_LEVELS.map(a => (
               <TouchableOpacity key={a.id} onPress={() => setActivity(a.id)} style={{ backgroundColor: activity === a.id ? C.card : C.surface, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: activity === a.id ? C.purple : C.border, flexDirection: 'row', alignItems: 'center' }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: C.text, fontWeight: '600', fontSize: 14 }}>{a.label}</Text>
-                  <Text style={{ color: C.muted, fontSize: 11, marginTop: 1 }}>{a.desc}</Text>
+                  <Text style={{ color: C.text, fontWeight: '600', fontSize: 14 }}>{tr('act_' + a.id + '_label')}</Text>
+                  <Text style={{ color: C.muted, fontSize: 11, marginTop: 1 }}>{tr('act_' + a.id + '_desc')}</Text>
                 </View>
                 {activity === a.id && <Text style={{ color: C.purple }}>✓</Text>}
               </TouchableOpacity>
             ))}
-            <Text style={{ color: C.muted, fontSize: 12, marginBottom: 8, marginTop: 16 }}>Training style</Text>
+            <Text style={{ color: C.muted, fontSize: 12, marginBottom: 8, marginTop: 16 }}>{tr('setup_trainStyle')}</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-              {TRAINING_TYPES.map(t => <Chip key={t.id} label={t.label} active={trainingType === t.id} onPress={() => setTrainingType(t.id)} />)}
+              {TRAINING_TYPES.map(t => <Chip key={t.id} label={tr('tt_' + t.id.replace(/-/g, ''))} active={trainingType === t.id} onPress={() => setTrainingType(t.id)} />)}
             </View>
-            <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6, marginTop: 16 }}>Training days per week</Text>
+            <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6, marginTop: 16 }}>{tr('setup_trainDays')}</Text>
             <TextInput style={[styles.input, { width: 100 }]} value={trainingDays} onChangeText={setTrainingDays} keyboardType="number-pad" placeholder="e.g. 4" placeholderTextColor={C.dim} />
           </View>
         )}
 
         {step === 3 && (
           <View>
-            <Text style={{ color: C.text, fontSize: 26, fontWeight: '800', marginBottom: 6 }}>Preferences</Text>
-            <Text style={{ color: C.muted, fontSize: 14, marginBottom: 24 }}>Fine-tune your plan to match your lifestyle.</Text>
-            <Text style={{ color: C.muted, fontSize: 12, marginBottom: 8 }}>Diet style</Text>
+            <Text style={{ color: C.text, fontSize: 26, fontWeight: '800', marginBottom: 6 }}>{tr('setup_prefs_title')}</Text>
+            <Text style={{ color: C.muted, fontSize: 14, marginBottom: 24 }}>{tr('setup_prefs_sub')}</Text>
+            <Text style={{ color: C.muted, fontSize: 12, marginBottom: 8 }}>{tr('setup_dietStyle')}</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 }}>
-              {DIET_TYPES.map(d => <Chip key={d.id} label={d.label} active={diet === d.id} onPress={() => setDiet(d.id)} small />)}
+              {DIET_TYPES.map(d => <Chip key={d.id} label={tr('tt_' + d.id.replace(/-/g, ''))} active={diet === d.id} onPress={() => setDiet(d.id)} small />)}
             </View>
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Sleep (hours)</Text><TextInput style={styles.input} value={sleep} onChangeText={setSleep} keyboardType="number-pad" placeholder="7" placeholderTextColor={C.dim} /></View>
-              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Time frame (months)</Text><TextInput style={styles.input} value={timeFrame} onChangeText={setTimeFrame} keyboardType="number-pad" placeholder="3" placeholderTextColor={C.dim} /></View>
+              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_sleepH')}</Text><TextInput style={styles.input} value={sleep} onChangeText={setSleep} keyboardType="number-pad" placeholder="7" placeholderTextColor={C.dim} /></View>
+              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_timeFrame')}</Text><TextInput style={styles.input} value={timeFrame} onChangeText={setTimeFrame} keyboardType="number-pad" placeholder="3" placeholderTextColor={C.dim} /></View>
             </View>
-            <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Daily water target (ml)</Text>
+            <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_waterTarget')}</Text>
             <TextInput style={[styles.input, { width: 140 }]} value={waterTarget} onChangeText={setWaterTarget} keyboardType="number-pad" placeholder="2500" placeholderTextColor={C.dim} />
             {/* Live preview */}
             <Card style={{ marginTop: 20 }}>
-              <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>Your macro preview</Text>
+              <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_macroPreview')}</Text>
               {(() => {
                 const m = calcMacros({ weight: Number(weight), height: Number(height), age: Number(age), sex, goal, activity });
                 return m
-                  ? <><Text style={{ color: C.text, fontWeight: '700', fontSize: 18 }}>{m.calories} kcal / day</Text><Text style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>P: {m.protein}g  ·  C: {m.carbs}g  ·  F: {m.fats}g</Text></>
-                  : <Text style={{ color: C.dim, fontSize: 12 }}>Fill in body data to see the preview.</Text>;
+                  ? <><Text style={{ color: C.text, fontWeight: '700', fontSize: 18 }}>{m.calories} kcal / {tr('today').toLowerCase()}</Text><Text style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>P: {m.protein}g  ·  C: {m.carbs}g  ·  F: {m.fats}g</Text></>
+                  : <Text style={{ color: C.dim, fontSize: 12 }}>{tr('setup_fillBody')}</Text>;
               })()}
             </Card>
           </View>
         )}
 
         <View style={{ flexDirection: 'row', gap: 12, marginTop: 32 }}>
-          {step > 0 && <Btn label="Back" onPress={goBack} variant="secondary" style={{ flex: 1 }} />}
+          {step > 0 && <Btn label={tr('setup_back')} onPress={goBack} variant="secondary" style={{ flex: 1 }} />}
           {step < 3
-            ? <Btn label="Continue →" onPress={goNext} style={{ flex: 2 }} />
-            : <Btn label="Build My Plan →" onPress={finish} loading={saving} style={{ flex: 2 }} />}
+            ? <Btn label={tr('setup_continue')} onPress={goNext} style={{ flex: 2 }} />
+            : <Btn label={tr('setup_buildPlan')} onPress={finish} loading={saving} style={{ flex: 2 }} />}
         </View>
       </View>
       </Animated.ScrollView>
@@ -834,17 +966,17 @@ function TodayTab({ profile, macros, today, onAddWater, onResetWater, streak, la
     <ScrollView contentContainerStyle={{ padding: isDesktop ? 32 : 20, paddingBottom: isDesktop ? 40 : 100, alignItems: isDesktop ? 'center' : undefined }}>
     <View style={{ width: '100%', maxWidth: isDesktop ? 860 : undefined }}>
       <View style={{ marginBottom: 20 }}>
-        <Text style={{ color: C.muted, fontSize: 13 }}>{todayStr()}</Text>
-        <Text style={{ color: C.text, fontSize: 24, fontWeight: '800', marginTop: 2 }}>{getGreeting()}{profile.username ? `, ${profile.username}` : ''} 👋</Text>
+        <Text style={{ color: C.muted, fontSize: 13 }}>{todayStr(lang)}</Text>
+        <Text style={{ color: C.text, fontSize: 24, fontWeight: '800', marginTop: 2 }}>{getGreeting(lang)}{profile.username ? `, ${profile.username}` : ''} 👋</Text>
       </View>
       <Card>
         <View style={{ alignItems: 'center', paddingVertical: 8 }}>
           <CalorieRing consumed={consumed} goal={macros?.calories || 2000} />
         </View>
         <View style={{ marginTop: 16 }}>
-          <MacroBar label="Protein" value={Math.round(pConsumed)} goal={macros?.protein || 150} color={C.purple} />
-          <MacroBar label="Carbs"   value={Math.round(cConsumed)} goal={macros?.carbs   || 200} color={C.cyan}   />
-          <MacroBar label="Fats"    value={Math.round(fConsumed)} goal={macros?.fats    || 60}  color={C.amber}  />
+          <MacroBar label={tr('macroProtein')} value={Math.round(pConsumed)} goal={macros?.protein || 150} color={C.purple} />
+          <MacroBar label={tr('macroCarbs')}   value={Math.round(cConsumed)} goal={macros?.carbs   || 200} color={C.cyan}   />
+          <MacroBar label={tr('macroFats')}    value={Math.round(fConsumed)} goal={macros?.fats    || 60}  color={C.amber}  />
         </View>
       </Card>
       <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
@@ -862,12 +994,12 @@ function TodayTab({ profile, macros, today, onAddWater, onResetWater, streak, la
         <Card>
           <Text style={{ color: C.muted, fontSize: 11, letterSpacing: 1, marginBottom: 10 }}>{tr('dailyTargets')}</Text>
           {[
-            { label: 'Calories', value: `${macros.calories} kcal`, color: C.purple },
-            { label: 'Protein',  value: `${macros.protein}g`,      color: C.purple },
-            { label: 'Carbs',    value: `${macros.carbs}g`,        color: C.cyan   },
-            { label: 'Fats',     value: `${macros.fats}g`,         color: C.amber  },
-            { label: 'BMR',      value: `${macros.bmr} kcal`,      color: C.dim    },
-            { label: 'TDEE',     value: `${macros.tdee} kcal`,     color: C.dim    },
+            { label: tr('macroCalories'), value: `${macros.calories} kcal`, color: C.purple },
+            { label: tr('macroProtein'),  value: `${macros.protein}g`,      color: C.purple },
+            { label: tr('macroCarbs'),    value: `${macros.carbs}g`,        color: C.cyan   },
+            { label: tr('macroFats'),     value: `${macros.fats}g`,         color: C.amber  },
+            { label: tr('labelBmr'),      value: `${macros.bmr} kcal`,      color: C.dim    },
+            { label: tr('labelTdee'),     value: `${macros.tdee} kcal`,     color: C.dim    },
           ].map(row => (
             <View key={row.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: C.border }}>
               <Text style={{ color: C.muted, fontSize: 13 }}>{row.label}</Text>
@@ -967,7 +1099,7 @@ function LogTab({ today, onAddFood, onRemoveFood, lang }) {
           {/* "Not found" hint */}
           {noResults && !showForm && (
             <TouchableOpacity onPress={() => openForm(query)} style={{ backgroundColor: C.card, borderRadius: 10, padding: 12, marginBottom: 8, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.borderBright }}>
-              <Text style={{ color: C.muted, flex: 1, fontSize: 13 }}>"{query}" not found — add it manually</Text>
+              <Text style={{ color: C.muted, flex: 1, fontSize: 13 }}>"{query}" {tr('notFoundAddManually')}</Text>
               <Text style={{ color: C.purple, fontWeight: '700' }}>+</Text>
             </TouchableOpacity>
           )}
@@ -976,7 +1108,7 @@ function LogTab({ today, onAddFood, onRemoveFood, lang }) {
           {showForm ? (
             <View style={{ backgroundColor: C.card, borderRadius: 16, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: C.borderBright }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <Text style={{ color: C.text, fontWeight: '800', fontSize: 16 }}>Add food to {meal}</Text>
+                <Text style={{ color: C.text, fontWeight: '800', fontSize: 16 }}>{tr('addFoodTo')} {tr(meal)}</Text>
                 <TouchableOpacity onPress={cancelForm} style={{ padding: 4 }}>
                   <Text style={{ color: C.muted, fontSize: 20, lineHeight: 22 }}>×</Text>
                 </TouchableOpacity>
@@ -988,17 +1120,17 @@ function LogTab({ today, onAddFood, onRemoveFood, lang }) {
               </View>
 
               {/* Name */}
-              <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>Food name *</Text>
+              <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>{tr('foodNameRequired')}</Text>
               <TextInput style={[styles.input, { marginBottom: 12 }]} value={cName} onChangeText={setCName} placeholder="e.g. Beans, Rice, Chicken…" placeholderTextColor={C.dim} />
 
               {/* Weight + Calories */}
               <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>Weight (g)</Text>
+                  <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>{tr('weightGLabel')}</Text>
                   <TextInput style={styles.input} value={cWeight} onChangeText={setCWeight} keyboardType="decimal-pad" placeholder="200" placeholderTextColor={C.dim} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>Calories (kcal)</Text>
+                  <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>{tr('caloriesKcalLabel')}</Text>
                   <TextInput style={styles.input} value={cCal} onChangeText={setCCal} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={C.dim} />
                 </View>
               </View>
@@ -1006,27 +1138,27 @@ function LogTab({ today, onAddFood, onRemoveFood, lang }) {
               {/* Macros */}
               <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>Protein (g)</Text>
+                  <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>{tr('proteinGLabel')}</Text>
                   <TextInput style={styles.input} value={cP} onChangeText={setCP} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={C.dim} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>Carbs (g)</Text>
+                  <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>{tr('carbsGLabel')}</Text>
                   <TextInput style={styles.input} value={cC} onChangeText={setCC} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={C.dim} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>Fat (g)</Text>
+                  <Text style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>{tr('fatGLabel')}</Text>
                   <TextInput style={styles.input} value={cF} onChangeText={setCF} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={C.dim} />
                 </View>
               </View>
 
               <TouchableOpacity onPress={submitCustom} style={{ backgroundColor: cName.trim() ? C.purple : C.elevated, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}>
-                <Text style={{ color: cName.trim() ? '#fff' : C.dim, fontWeight: '800', fontSize: 15 }}>Add to {meal}</Text>
+                <Text style={{ color: cName.trim() ? '#fff' : C.dim, fontWeight: '800', fontSize: 15 }}>{tr('addTo')} {tr(meal)}</Text>
               </TouchableOpacity>
             </View>
           ) : (
             /* ── "Add food" button — always visible ── */
             <TouchableOpacity onPress={() => openForm()} style={{ backgroundColor: C.purple, borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginBottom: 8 }}>
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>+ Add food manually</Text>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>{tr('addFoodManually')}</Text>
             </TouchableOpacity>
           )}
 
@@ -1057,7 +1189,7 @@ function LogTab({ today, onAddFood, onRemoveFood, lang }) {
 
           {today.food_log.length > 0 && (
             <Card style={{ marginTop: 16 }} glow>
-              <Text style={{ color: C.muted, fontSize: 11, letterSpacing: 1, marginBottom: 8 }}>TODAY'S TOTALS</Text>
+              <Text style={{ color: C.muted, fontSize: 11, letterSpacing: 1, marginBottom: 8 }}>{tr('todaysTotals')}</Text>
               <Text style={{ color: C.text, fontWeight: '800', fontSize: 22 }}>{totalCal} kcal</Text>
               <Text style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>
                 P: {Math.round(today.food_log.reduce((s,f)=>s+f.p,0))}g  ·  C: {Math.round(today.food_log.reduce((s,f)=>s+f.c,0))}g  ·  F: {Math.round(today.food_log.reduce((s,f)=>s+f.f,0))}g
@@ -1106,7 +1238,7 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: isDesktop ? 12 : 8 }}>
         <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap' }}>
-          {categories.map(cat => <Chip key={cat} label={cat} active={activeCategory === cat} onPress={() => setActiveCategory(cat)} small />)}
+          {categories.map(cat => <Chip key={cat} label={tr('cat_' + cat.toLowerCase())} active={activeCategory === cat} onPress={() => setActiveCategory(cat)} small />)}
         </View>
         <TouchableOpacity onPress={() => setShowHelp(true)} style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: C.elevated, borderWidth: 1, borderColor: C.borderBright, alignItems: 'center', justifyContent: 'center', marginLeft: 8 }}>
           <Text style={{ color: C.purple, fontWeight: '800', fontSize: 13 }}>?</Text>
@@ -1115,13 +1247,13 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
       <Modal visible={showHelp} transparent animationType="fade" onRequestClose={() => setShowHelp(false)}>
         <TouchableOpacity activeOpacity={1} onPress={() => setShowHelp(false)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
           <TouchableOpacity activeOpacity={1} style={{ backgroundColor: C.card, borderRadius: 20, padding: 24, width: '100%', maxWidth: 400, borderWidth: 1, borderColor: C.borderBright }}>
-            <Text style={{ color: C.text, fontWeight: '800', fontSize: 17, marginBottom: 16 }}>⚡ How to use Training</Text>
+            <Text style={{ color: C.text, fontWeight: '800', fontSize: 17, marginBottom: 16 }}>{tr('helpTitle')}</Text>
             {[
-              { icon: '1️⃣', title: 'Pick a category', desc: 'Choose Push, Pull, Legs, Core or Cardio to browse exercises.' },
-              { icon: '2️⃣', title: 'Add an exercise', desc: 'Tap "+ Add exercise" and select one from the list.' },
-              { icon: '3️⃣', title: 'Log a set', desc: 'Enter the weight in kg and the number of reps, then tap Log. Repeat for each set.' },
-              { icon: '4️⃣', title: 'Edit or delete', desc: 'Tap ✏ to fix a set\'s weight or reps. Tap ✕ on a set to delete it, or ✕ next to the exercise name to remove the whole exercise.' },
-              { icon: '5️⃣', title: 'Finish', desc: 'When you\'re done, tap "Finish Workout" to save your session and add to your streak.' },
+              { icon: '1️⃣', title: tr('help1title'), desc: tr('help1desc') },
+              { icon: '2️⃣', title: tr('help2title'), desc: tr('help2desc') },
+              { icon: '3️⃣', title: tr('help3title'), desc: tr('help3desc') },
+              { icon: '4️⃣', title: tr('help4title'), desc: tr('help4desc') },
+              { icon: '5️⃣', title: tr('help5title'), desc: tr('help5desc') },
             ].map(step => (
               <View key={step.title} style={{ flexDirection: 'row', gap: 12, marginBottom: 14 }}>
                 <Text style={{ fontSize: 18 }}>{step.icon}</Text>
@@ -1139,7 +1271,7 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
       </Modal>
       <TouchableOpacity onPress={() => setShowExercises(v => !v)} style={{ backgroundColor: C.elevated, borderRadius: 12, padding: isDesktop ? 14 : 10, marginBottom: isDesktop ? 12 : 8, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.borderBright }}>
         <Text style={{ color: C.purple, fontSize: isDesktop ? 20 : 16, marginRight: 8 }}>+</Text>
-        <Text style={{ color: C.text, fontWeight: '600', fontSize: isDesktop ? 15 : 13 }}>{tr('addExerciseFrom')} {activeCategory}</Text>
+        <Text style={{ color: C.text, fontWeight: '600', fontSize: isDesktop ? 15 : 13 }}>{tr('addExerciseFrom')} {tr('cat_' + activeCategory.toLowerCase())}</Text>
       </TouchableOpacity>
       {showExercises && (
         <Card style={{ marginBottom: 16 }}>
@@ -1889,17 +2021,18 @@ export default function App() {
 
       {screen === SCREENS.WELCOME && (
         <WelcomeScreen
+          lang={lang}
           onGetStarted={() => { setAuthMode('signup'); setScreen(SCREENS.AUTH); }}
           onSignIn={() => { setAuthMode('signin'); setScreen(SCREENS.AUTH); }}
         />
       )}
 
       {screen === SCREENS.AUTH && (
-        <AuthScreen onBack={() => setScreen(SCREENS.WELCOME)} initialMode={authMode} />
+        <AuthScreen lang={lang} onBack={() => setScreen(SCREENS.WELCOME)} initialMode={authMode} />
       )}
 
       {screen === SCREENS.SETUP && (
-        <SetupScreen onComplete={handleSetupComplete} userId={user?.id} />
+        <SetupScreen lang={lang} onComplete={handleSetupComplete} userId={user?.id} />
       )}
 
       {screen === SCREENS.MAIN && (
