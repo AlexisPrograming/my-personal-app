@@ -1025,6 +1025,7 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
   const [setInputs,      setSetInputs]      = useState({});
   const [editingSet,     setEditingSet]     = useState(null); // { exIndex, setIndex }
   const [editInputs,     setEditInputs]     = useState({ weight: '', reps: '' });
+  const [showHelp,       setShowHelp]       = useState(false);
   const categories = Object.keys(EXERCISES);
   const days       = ['M','T','W','T','F','S','S'];
   const dayOfWeek  = new Date().getDay();
@@ -1050,9 +1051,39 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
           </Card>
         ))}
       </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: isDesktop ? 12 : 8 }}>
-        {categories.map(cat => <Chip key={cat} label={cat} active={activeCategory === cat} onPress={() => setActiveCategory(cat)} small />)}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: isDesktop ? 12 : 8 }}>
+        <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap' }}>
+          {categories.map(cat => <Chip key={cat} label={cat} active={activeCategory === cat} onPress={() => setActiveCategory(cat)} small />)}
+        </View>
+        <TouchableOpacity onPress={() => setShowHelp(true)} style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: C.elevated, borderWidth: 1, borderColor: C.borderBright, alignItems: 'center', justifyContent: 'center', marginLeft: 8 }}>
+          <Text style={{ color: C.purple, fontWeight: '800', fontSize: 13 }}>?</Text>
+        </TouchableOpacity>
       </View>
+      <Modal visible={showHelp} transparent animationType="fade" onRequestClose={() => setShowHelp(false)}>
+        <TouchableOpacity activeOpacity={1} onPress={() => setShowHelp(false)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <TouchableOpacity activeOpacity={1} style={{ backgroundColor: C.card, borderRadius: 20, padding: 24, width: '100%', maxWidth: 400, borderWidth: 1, borderColor: C.borderBright }}>
+            <Text style={{ color: C.text, fontWeight: '800', fontSize: 17, marginBottom: 16 }}>⚡ How to use Training</Text>
+            {[
+              { icon: '1️⃣', title: 'Pick a category', desc: 'Choose Push, Pull, Legs, Core or Cardio to browse exercises.' },
+              { icon: '2️⃣', title: 'Add an exercise', desc: 'Tap "+ Add exercise" and select one from the list.' },
+              { icon: '3️⃣', title: 'Log a set', desc: 'Enter the weight in kg and the number of reps, then tap Log. Repeat for each set.' },
+              { icon: '4️⃣', title: 'Edit or delete', desc: 'Tap ✏ to fix a set\'s weight or reps. Tap ✕ on a set to delete it, or ✕ next to the exercise name to remove the whole exercise.' },
+              { icon: '5️⃣', title: 'Finish', desc: 'When you\'re done, tap "Finish Workout" to save your session and add to your streak.' },
+            ].map(step => (
+              <View key={step.title} style={{ flexDirection: 'row', gap: 12, marginBottom: 14 }}>
+                <Text style={{ fontSize: 18 }}>{step.icon}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: C.text, fontWeight: '700', fontSize: 13 }}>{step.title}</Text>
+                  <Text style={{ color: C.muted, fontSize: 12, marginTop: 2, lineHeight: 17 }}>{step.desc}</Text>
+                </View>
+              </View>
+            ))}
+            <TouchableOpacity onPress={() => setShowHelp(false)} style={{ backgroundColor: C.purple, borderRadius: 12, padding: 12, alignItems: 'center', marginTop: 4 }}>
+              <Text style={{ color: '#fff', fontWeight: '700' }}>Got it!</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
       <TouchableOpacity onPress={() => setShowExercises(v => !v)} style={{ backgroundColor: C.elevated, borderRadius: 12, padding: isDesktop ? 14 : 10, marginBottom: isDesktop ? 12 : 8, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.borderBright }}>
         <Text style={{ color: C.purple, fontSize: isDesktop ? 20 : 16, marginRight: 8 }}>+</Text>
         <Text style={{ color: C.text, fontWeight: '600', fontSize: isDesktop ? 15 : 13 }}>Add exercise from {activeCategory}</Text>
