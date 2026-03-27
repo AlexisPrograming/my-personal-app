@@ -1032,30 +1032,30 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
   const totalVol   = today.exercises.reduce((s, e) => s + e.sets.reduce((ss, set) => ss + (set.weight||0)*(set.reps||0), 0), 0);
   const isDesktop  = useIsDesktop();
   return (
-    <ScrollView contentContainerStyle={{ padding: isDesktop ? 32 : 20, paddingBottom: isDesktop ? 40 : 100, alignItems: isDesktop ? 'center' : undefined }}>
+    <ScrollView contentContainerStyle={{ padding: isDesktop ? 32 : 12, paddingBottom: isDesktop ? 40 : 90, alignItems: isDesktop ? 'center' : undefined }}>
     <View style={{ width: '100%', maxWidth: isDesktop ? 860 : undefined }}>
-      <Text style={{ color: C.text, fontSize: 22, fontWeight: '800', marginBottom: 6 }}>Training</Text>
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
+      <Text style={{ color: C.text, fontSize: isDesktop ? 22 : 18, fontWeight: '800', marginBottom: isDesktop ? 6 : 4 }}>Training</Text>
+      <View style={{ flexDirection: 'row', gap: 6, marginBottom: isDesktop ? 20 : 10 }}>
         {days.map((d, i) => {
           const idx     = i === 6 ? 0 : i + 1;
           const isToday = idx === dayOfWeek;
           return <View key={i} style={{ flex: 1, aspectRatio: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: isToday ? C.purple : C.card, borderWidth: 1, borderColor: isToday ? C.purple : C.border }}><Text style={{ color: isToday ? '#fff' : C.dim, fontSize: 11, fontWeight: isToday ? '700' : '400' }}>{d}</Text></View>;
         })}
       </View>
-      <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+      <View style={{ flexDirection: 'row', gap: isDesktop ? 12 : 8, marginBottom: isDesktop ? 16 : 8 }}>
         {[{ label: 'Exercises', value: today.exercises.length, color: C.purple }, { label: 'Total sets', value: totalSets, color: C.cyan }, { label: 'Volume kg', value: totalVol, color: C.amber }].map(s => (
-          <Card key={s.label} style={{ flex: 1, marginBottom: 0, padding: 12, alignItems: 'center' }}>
-            <Text style={{ color: s.color, fontWeight: '800', fontSize: 22 }}>{s.value}</Text>
-            <Text style={{ color: C.muted, fontSize: 10, marginTop: 2 }}>{s.label}</Text>
+          <Card key={s.label} style={{ flex: 1, marginBottom: 0, padding: isDesktop ? 12 : 8, alignItems: 'center' }}>
+            <Text style={{ color: s.color, fontWeight: '800', fontSize: isDesktop ? 22 : 17 }}>{s.value}</Text>
+            <Text style={{ color: C.muted, fontSize: 9, marginTop: 1 }}>{s.label}</Text>
           </Card>
         ))}
       </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: isDesktop ? 12 : 8 }}>
         {categories.map(cat => <Chip key={cat} label={cat} active={activeCategory === cat} onPress={() => setActiveCategory(cat)} small />)}
       </View>
-      <TouchableOpacity onPress={() => setShowExercises(v => !v)} style={{ backgroundColor: C.elevated, borderRadius: 12, padding: 14, marginBottom: 12, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.borderBright }}>
-        <Text style={{ color: C.purple, fontSize: 20, marginRight: 10 }}>+</Text>
-        <Text style={{ color: C.text, fontWeight: '600' }}>Add exercise from {activeCategory}</Text>
+      <TouchableOpacity onPress={() => setShowExercises(v => !v)} style={{ backgroundColor: C.elevated, borderRadius: 12, padding: isDesktop ? 14 : 10, marginBottom: isDesktop ? 12 : 8, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.borderBright }}>
+        <Text style={{ color: C.purple, fontSize: isDesktop ? 20 : 16, marginRight: 8 }}>+</Text>
+        <Text style={{ color: C.text, fontWeight: '600', fontSize: isDesktop ? 15 : 13 }}>Add exercise from {activeCategory}</Text>
       </TouchableOpacity>
       {showExercises && (
         <Card style={{ marginBottom: 16 }}>
@@ -1071,9 +1071,9 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
         </Card>
       )}
       {today.exercises.map((ex, ei) => (
-        <Card key={ei} style={{ marginBottom: 10 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-            <Text style={{ color: C.text, fontWeight: '700', fontSize: 14, flex: 1 }}>{ex.name}</Text>
+        <Card key={ei} style={{ marginBottom: isDesktop ? 10 : 7, padding: isDesktop ? undefined : 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: isDesktop ? 10 : 6 }}>
+            <Text style={{ color: C.text, fontWeight: '700', fontSize: isDesktop ? 14 : 13, flex: 1 }}>{ex.name}</Text>
             <TouchableOpacity onPress={() => onDeleteExercise(ei)} style={{ paddingHorizontal: 8, paddingVertical: 2 }}>
               <Text style={{ color: C.red, fontSize: 16 }}>✕</Text>
             </TouchableOpacity>
@@ -1094,11 +1094,11 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
                 </TouchableOpacity>
               </View>
             ) : (
-              <View key={si} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: C.purple, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>{si + 1}</Text>
+              <View key={si} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: isDesktop ? 6 : 4 }}>
+                <View style={{ width: isDesktop ? 24 : 20, height: isDesktop ? 24 : 20, borderRadius: 6, backgroundColor: C.purple, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{si + 1}</Text>
                 </View>
-                <Text style={{ color: C.text, fontSize: 13, flex: 1 }}>{set.weight > 0 ? `${set.weight}kg` : '—'}  ×  {set.reps} reps</Text>
+                <Text style={{ color: C.text, fontSize: isDesktop ? 13 : 12, flex: 1 }}>{set.weight > 0 ? `${set.weight}kg` : '—'}  ×  {set.reps} reps</Text>
                 <TouchableOpacity onPress={() => { setEditingSet({ exIndex: ei, setIndex: si }); setEditInputs({ weight: String(set.weight || ''), reps: String(set.reps || '') }); }} style={{ paddingHorizontal: 6 }}>
                   <Text style={{ color: C.amber, fontSize: 13 }}>✏</Text>
                 </TouchableOpacity>
@@ -1108,11 +1108,11 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
               </View>
             )
           ))}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
-            <TextInput style={[styles.input, { flex: 1, paddingVertical: 8 }]} placeholder="kg" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.weight||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], weight: v } }))} />
-            <TextInput style={[styles.input, { flex: 1, paddingVertical: 8 }]} placeholder="reps" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.reps||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], reps: v } }))} />
-            <TouchableOpacity onPress={() => { const inp = setInputs[ex.id]||{}; const w = Math.min(1000, Math.max(0, Number(inp.weight)||0)); const r = Math.min(9999, Math.max(0, Math.round(Number(inp.reps)||0))); onLogSet(ei, { weight: w, reps: r }); setSetInputs(p => ({ ...p, [ex.id]: {} })); }} style={{ backgroundColor: C.purple, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 9 }}>
-              <Text style={{ color: '#fff', fontWeight: '700' }}>Log</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: isDesktop ? 8 : 6 }}>
+            <TextInput style={[styles.input, { flex: 1, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13 }]} placeholder="kg" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.weight||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], weight: v } }))} />
+            <TextInput style={[styles.input, { flex: 1, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13 }]} placeholder="reps" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.reps||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], reps: v } }))} />
+            <TouchableOpacity onPress={() => { const inp = setInputs[ex.id]||{}; const w = Math.min(1000, Math.max(0, Number(inp.weight)||0)); const r = Math.min(9999, Math.max(0, Math.round(Number(inp.reps)||0))); onLogSet(ei, { weight: w, reps: r }); setSetInputs(p => ({ ...p, [ex.id]: {} })); }} style={{ backgroundColor: C.purple, borderRadius: 8, paddingHorizontal: isDesktop ? 14 : 12, paddingVertical: isDesktop ? 9 : 7 }}>
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: isDesktop ? 14 : 13 }}>Log</Text>
             </TouchableOpacity>
           </View>
         </Card>
