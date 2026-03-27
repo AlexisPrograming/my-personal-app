@@ -1118,8 +1118,8 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
                 <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: C.amber, alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>{si + 1}</Text>
                 </View>
-                <TextInput style={[styles.input, { flex: 1, paddingVertical: 6, fontSize: 12 }]} placeholder="kg" placeholderTextColor={C.dim} keyboardType="number-pad" value={editInputs.weight} onChangeText={v => setEditInputs(p => ({ ...p, weight: v }))} />
-                <TextInput style={[styles.input, { flex: 1, paddingVertical: 6, fontSize: 12 }]} placeholder="reps" placeholderTextColor={C.dim} keyboardType="number-pad" value={editInputs.reps} onChangeText={v => setEditInputs(p => ({ ...p, reps: v }))} />
+                <TextInput style={[styles.input, { width: isDesktop ? undefined : 58, flex: isDesktop ? 1 : undefined, paddingVertical: 6, fontSize: 12, textAlign: 'center' }]} placeholder="kg" placeholderTextColor={C.dim} keyboardType="number-pad" value={editInputs.weight} onChangeText={v => setEditInputs(p => ({ ...p, weight: v }))} />
+                <TextInput style={[styles.input, { width: isDesktop ? undefined : 58, flex: isDesktop ? 1 : undefined, paddingVertical: 6, fontSize: 12, textAlign: 'center' }]} placeholder="reps" placeholderTextColor={C.dim} keyboardType="number-pad" value={editInputs.reps} onChangeText={v => setEditInputs(p => ({ ...p, reps: v }))} />
                 <TouchableOpacity onPress={() => { const w = Math.min(1000, Math.max(0, Number(editInputs.weight)||0)); const r = Math.min(9999, Math.max(0, Math.round(Number(editInputs.reps)||0))); onEditSet(ei, si, { weight: w, reps: r }); setEditingSet(null); }} style={{ backgroundColor: C.green, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 6 }}>
                   <Text style={{ color: '#fff', fontWeight: '700', fontSize: 11 }}>✓</Text>
                 </TouchableOpacity>
