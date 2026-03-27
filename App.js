@@ -1152,7 +1152,7 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
         </Card>
       ))}
       {today.exercises.length > 0 && (
-        <Btn label={today.completed ? '✓ Workout Complete!' : 'Finish Workout'} onPress={onFinishWorkout} variant={today.completed ? 'secondary' : 'primary'} style={{ marginTop: 8 }} />
+        <Btn label={today.completed ? '✓ Done — Tap to undo' : 'Finish Workout'} onPress={onFinishWorkout} variant={today.completed ? 'secondary' : 'primary'} style={{ marginTop: 8 }} />
       )}
     </View>
     </ScrollView>
@@ -1663,15 +1663,25 @@ export default function App() {
   };
 
   const handleFinishWorkout = async () => {
-    if (workout.completed) return; // Already completed today — don't double-count streak
-    const newW  = { ...workout, completed: true };
-    const saved = await saveWorkout(newW);
-    setWorkout(saved || newW);
-    setHistoryLoaded(false);
-    const newStreak = streak + 1;
-    setStreak(newStreak);
-    await supabase.from('streaks').upsert({ user_id: user.id, current_streak: newStreak, last_workout_date: todayISO() }, { onConflict: 'user_id' });
-    if (Platform.OS === 'web') { window.alert(`Workout Complete! 🔥 ${newStreak} day streak — keep going!`); } else { Alert.alert('Workout Complete! 🔥', `${newStreak} day streak — keep going!`); }
+    if (workout.completed) {
+      // Undo: uncomplete workout and subtract streak
+      const newW = { ...workout, completed: false };
+      const saved = await saveWorkout(newW);
+      setWorkout(saved || newW);
+      setHistoryLoaded(false);
+      const newStreak = Math.max(0, streak - 1);
+      setStreak(newStreak);
+      await supabase.from('streaks').upsert({ user_id: user.id, current_streak: newStreak, last_workout_date: todayISO() }, { onConflict: 'user_id' });
+    } else {
+      const newW  = { ...workout, completed: true };
+      const saved = await saveWorkout(newW);
+      setWorkout(saved || newW);
+      setHistoryLoaded(false);
+      const newStreak = streak + 1;
+      setStreak(newStreak);
+      await supabase.from('streaks').upsert({ user_id: user.id, current_streak: newStreak, last_workout_date: todayISO() }, { onConflict: 'user_id' });
+      if (Platform.OS === 'web') { window.alert(`Workout Complete! 🔥 ${newStreak} day streak — keep going!`); } else { Alert.alert('Workout Complete! 🔥', `${newStreak} day streak — keep going!`); }
+    }
   };
 
   const handleAddWeight = async (kg) => {
