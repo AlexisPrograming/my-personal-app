@@ -23,7 +23,8 @@
       "Bash(npx expo:*)",
       "Bash(find 'D:/my personal app/web' -name *.js -o -name *.ts -o -name *.env*)",
       "Bash(grep -r \"EXPO_PUBLIC\\\\|apiKey\\\\|secret\\\\|password\\\\|token\\\\|API_KEY\\\\|supabase\\\\|firebase\" 'D:/my personal app' --include=*.js --include=*.ts --include=*.env -l)",
-      "Bash(grep -r \"createServer\\\\|express\\\\|app\\\\.get\\\\|app\\\\.post\\\\|app\\\\.listen\" . --include=*.js --include=*.ts)"
+      "Bash(grep -r \"createServer\\\\|express\\\\|app\\\\.get\\\\|app\\\\.post\\\\|app\\\\.listen\" . --include=*.js --include=*.ts)",
+      "Bash(npm run:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

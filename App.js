@@ -1019,10 +1019,12 @@ function LogTab({ today, onAddFood, onRemoveFood }) {
 }
 
 // ─── TRAIN TAB ────────────────────────────────────────────────────────────────
-function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, streak }) {
+function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExercise, onDeleteSet, onEditSet, streak }) {
   const [activeCategory, setActiveCategory] = useState('Push');
   const [showExercises,  setShowExercises]  = useState(false);
   const [setInputs,      setSetInputs]      = useState({});
+  const [editingSet,     setEditingSet]     = useState(null); // { exIndex, setIndex }
+  const [editInputs,     setEditInputs]     = useState({ weight: '', reps: '' });
   const categories = Object.keys(EXERCISES);
   const days       = ['M','T','W','T','F','S','S'];
   const dayOfWeek  = new Date().getDay();
@@ -1070,14 +1072,41 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, streak }) {
       )}
       {today.exercises.map((ex, ei) => (
         <Card key={ei} style={{ marginBottom: 10 }}>
-          <Text style={{ color: C.text, fontWeight: '700', fontSize: 14, marginBottom: 10 }}>{ex.name}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+            <Text style={{ color: C.text, fontWeight: '700', fontSize: 14, flex: 1 }}>{ex.name}</Text>
+            <TouchableOpacity onPress={() => onDeleteExercise(ei)} style={{ paddingHorizontal: 8, paddingVertical: 2 }}>
+              <Text style={{ color: C.red, fontSize: 16 }}>✕</Text>
+            </TouchableOpacity>
+          </View>
           {ex.sets.map((set, si) => (
-            <View key={si} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: C.purple, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>{si + 1}</Text>
+            editingSet && editingSet.exIndex === ei && editingSet.setIndex === si ? (
+              <View key={si} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: C.amber, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>{si + 1}</Text>
+                </View>
+                <TextInput style={[styles.input, { flex: 1, paddingVertical: 6, fontSize: 12 }]} placeholder="kg" placeholderTextColor={C.dim} keyboardType="number-pad" value={editInputs.weight} onChangeText={v => setEditInputs(p => ({ ...p, weight: v }))} />
+                <TextInput style={[styles.input, { flex: 1, paddingVertical: 6, fontSize: 12 }]} placeholder="reps" placeholderTextColor={C.dim} keyboardType="number-pad" value={editInputs.reps} onChangeText={v => setEditInputs(p => ({ ...p, reps: v }))} />
+                <TouchableOpacity onPress={() => { const w = Math.min(1000, Math.max(0, Number(editInputs.weight)||0)); const r = Math.min(9999, Math.max(0, Math.round(Number(editInputs.reps)||0))); onEditSet(ei, si, { weight: w, reps: r }); setEditingSet(null); }} style={{ backgroundColor: C.green, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 6 }}>
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 11 }}>✓</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setEditingSet(null)} style={{ backgroundColor: C.elevated, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 6, borderWidth: 1, borderColor: C.border }}>
+                  <Text style={{ color: C.muted, fontSize: 11 }}>✕</Text>
+                </TouchableOpacity>
               </View>
-              <Text style={{ color: C.text, fontSize: 13 }}>{set.weight > 0 ? `${set.weight}kg` : '—'}  ×  {set.reps} reps</Text>
-            </View>
+            ) : (
+              <View key={si} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: C.purple, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>{si + 1}</Text>
+                </View>
+                <Text style={{ color: C.text, fontSize: 13, flex: 1 }}>{set.weight > 0 ? `${set.weight}kg` : '—'}  ×  {set.reps} reps</Text>
+                <TouchableOpacity onPress={() => { setEditingSet({ exIndex: ei, setIndex: si }); setEditInputs({ weight: String(set.weight || ''), reps: String(set.reps || '') }); }} style={{ paddingHorizontal: 6 }}>
+                  <Text style={{ color: C.amber, fontSize: 13 }}>✏</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => onDeleteSet(ei, si)} style={{ paddingHorizontal: 6 }}>
+                  <Text style={{ color: C.red, fontSize: 13 }}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            )
           ))}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
             <TextInput style={[styles.input, { flex: 1, paddingVertical: 8 }]} placeholder="kg" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.weight||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], weight: v } }))} />
@@ -1574,6 +1603,31 @@ export default function App() {
     setWorkout(saved || newW);
   };
 
+  const handleDeleteExercise = async (exIndex) => {
+    const exs  = workout.exercises.filter((_, i) => i !== exIndex);
+    const newW = { ...workout, exercises: exs };
+    const saved = await saveWorkout(newW);
+    setWorkout(saved || newW);
+  };
+
+  const handleDeleteSet = async (exIndex, setIndex) => {
+    const exs = [...workout.exercises];
+    exs[exIndex] = { ...exs[exIndex], sets: exs[exIndex].sets.filter((_, i) => i !== setIndex) };
+    const newW = { ...workout, exercises: exs };
+    const saved = await saveWorkout(newW);
+    setWorkout(saved || newW);
+  };
+
+  const handleEditSet = async (exIndex, setIndex, updatedSet) => {
+    const exs = [...workout.exercises];
+    const sets = [...exs[exIndex].sets];
+    sets[setIndex] = updatedSet;
+    exs[exIndex] = { ...exs[exIndex], sets };
+    const newW = { ...workout, exercises: exs };
+    const saved = await saveWorkout(newW);
+    setWorkout(saved || newW);
+  };
+
   const handleFinishWorkout = async () => {
     if (workout.completed) return; // Already completed today — don't double-count streak
     const newW  = { ...workout, completed: true };
@@ -1646,7 +1700,7 @@ export default function App() {
           <View style={{ flex: 1 }}>
             {tab === 'TODAY' && <TodayTab profile={profile} macros={macros} today={todayLog} onAddWater={handleAddWater} onResetWater={handleResetWater} streak={streak} />}
             {tab === 'LOG'   && <LogTab today={todayLog} onAddFood={handleAddFood} onRemoveFood={handleRemoveFood} />}
-            {tab === 'TRAIN' && <TrainTab today={workout} onLogSet={handleLogSet} onAddExercise={handleAddExercise} onFinishWorkout={handleFinishWorkout} streak={streak} />}
+            {tab === 'TRAIN' && <TrainTab today={workout} onLogSet={handleLogSet} onAddExercise={handleAddExercise} onFinishWorkout={handleFinishWorkout} onDeleteExercise={handleDeleteExercise} onDeleteSet={handleDeleteSet} onEditSet={handleEditSet} streak={streak} />}
             {tab === 'HIST'  && <HistoryTab logs={historyLogs} workouts={historyWorkouts} loading={loadingHistory} />}
             {tab === 'ME'    && <MeTab profile={profile} macros={macros} weights={weights} onAddWeight={handleAddWeight} onLogout={handleLogout} onEditProfile={() => setScreen(SCREENS.SETUP)} />}
           </View>
