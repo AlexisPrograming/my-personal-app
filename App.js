@@ -1109,9 +1109,9 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
             )
           ))}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: isDesktop ? 8 : 6 }}>
-            <TextInput style={[styles.input, { flex: 1, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13 }]} placeholder="kg" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.weight||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], weight: v } }))} />
-            <TextInput style={[styles.input, { flex: 1, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13 }]} placeholder="reps" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.reps||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], reps: v } }))} />
-            <TouchableOpacity onPress={() => { const inp = setInputs[ex.id]||{}; const w = Math.min(1000, Math.max(0, Number(inp.weight)||0)); const r = Math.min(9999, Math.max(0, Math.round(Number(inp.reps)||0))); onLogSet(ei, { weight: w, reps: r }); setSetInputs(p => ({ ...p, [ex.id]: {} })); }} style={{ backgroundColor: C.purple, borderRadius: 8, paddingHorizontal: isDesktop ? 14 : 12, paddingVertical: isDesktop ? 9 : 7 }}>
+            <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder="kg" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.weight||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], weight: v } }))} />
+            <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder="reps" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.reps||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], reps: v } }))} />
+            <TouchableOpacity onPress={() => { const inp = setInputs[ex.id]||{}; const w = Math.min(1000, Math.max(0, Number(inp.weight)||0)); const r = Math.min(9999, Math.max(0, Math.round(Number(inp.reps)||0))); onLogSet(ei, { weight: w, reps: r }); setSetInputs(p => ({ ...p, [ex.id]: {} })); }} style={{ flex: isDesktop ? undefined : 1, backgroundColor: C.purple, borderRadius: 8, paddingHorizontal: isDesktop ? 14 : 12, paddingVertical: isDesktop ? 9 : 7, alignItems: 'center' }}>
               <Text style={{ color: '#fff', fontWeight: '700', fontSize: isDesktop ? 14 : 13 }}>Log</Text>
             </TouchableOpacity>
           </View>
@@ -1246,9 +1246,9 @@ function CoachModal({ visible, onClose, macros }) {
             </View>
           )}
         </ScrollView>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 44, marginBottom: 4 }} contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 6 }}>
           {['Protein tips', 'Best training split', 'Sleep better', 'Water intake', 'Calorie deficit'].map(s => (
-            <TouchableOpacity key={s} onPress={() => setInput(s)} style={{ backgroundColor: C.elevated, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, borderWidth: 1, borderColor: C.border }}><Text style={{ color: C.muted, fontSize: 12 }}>{s}</Text></TouchableOpacity>
+            <TouchableOpacity key={s} onPress={() => setInput(s)} style={{ backgroundColor: C.elevated, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, marginRight: 8, borderWidth: 1, borderColor: C.border }}><Text style={{ color: C.muted, fontSize: 12 }}>{s}</Text></TouchableOpacity>
           ))}
         </ScrollView>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
