@@ -34,7 +34,8 @@
       "Bash(winget install:*)",
       "Bash(ls:*)",
       "Bash(npx supabase:*)",
-      "WebFetch(domain:pulse-health-coach.vercel.app)"
+      "WebFetch(domain:pulse-health-coach.vercel.app)",
+      "mcp__claude_ai_Supabase__get_logs"
     ]
   },
   "enableAllProjectMcpServers": true,
