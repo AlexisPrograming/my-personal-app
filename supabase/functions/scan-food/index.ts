@@ -1,0 +1,185 @@
+// Supabase Edge Function: scan-food
+// Securely calls Anthropic Claude Vision to identify food from an image.
+// Deploy: supabase functions deploy scan-food
+// Secrets: supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import Anthropic from 'https://esm.sh/@anthropic-ai/sdk';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+// In-memory rate limiter: 20 scans per user per hour
+const _scanWindows = new Map<string, number[]>();
+const RATE_LIMIT   = 20;
+const RATE_WINDOW  = 60 * 60 * 1000; // 1 hour
+
+function checkRateLimit(userId: string): boolean {
+  const now  = Date.now();
+  const prev = (_scanWindows.get(userId) ?? []).filter(t => now - t < RATE_WINDOW);
+  if (prev.length >= RATE_LIMIT) return false;
+  prev.push(now);
+  _scanWindows.set(userId, prev);
+  return true;
+}
+
+function clamp(value: unknown, min: number, max: number): number {
+  const n = Number(value);
+  if (!isFinite(n) || n < min) return 0;
+  return Math.min(Math.round(n * 10) / 10, max);
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Body size guard: 5 MB
+  const contentLength = req.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > 5 * 1024 * 1024) {
+    return new Response(JSON.stringify({ error: 'Imagen demasiado grande. Máximo 5 MB.' }), {
+      status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    // ── Auth ──────────────────────────────────────────────────────────────────
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'No autorizado' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')      ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } },
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'No autorizado' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ── Rate limit ────────────────────────────────────────────────────────────
+    if (!checkRateLimit(user.id)) {
+      return new Response(JSON.stringify({ error: 'Límite alcanzado. Máximo 20 escaneos por hora.' }), {
+        status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ── Validate body ─────────────────────────────────────────────────────────
+    const body = await req.json();
+    const { imageBase64, mediaType = 'image/jpeg' } = body;
+
+    if (!imageBase64 || typeof imageBase64 !== 'string' || imageBase64.length < 100) {
+      return new Response(JSON.stringify({ error: 'imageBase64 requerido' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const;
+    type ValidMediaType = typeof validTypes[number];
+    if (!validTypes.includes(mediaType as ValidMediaType)) {
+      return new Response(JSON.stringify({ error: 'Tipo de imagen no válido' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ── Call Claude Vision ────────────────────────────────────────────────────
+    const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') });
+
+    const message = await anthropic.messages.create({
+      model:      'claude-sonnet-4-20250514',
+      max_tokens: 512,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type:   'image',
+            source: { type: 'base64', media_type: mediaType as ValidMediaType, data: imageBase64 },
+          },
+          {
+            type: 'text',
+            text: `Analiza esta imagen de comida y responde ÚNICAMENTE con un objeto JSON sin markdown ni explicación. Estructura:
+{
+  "name": "nombre del alimento en español",
+  "confidence": "high|medium|low",
+  "per100g": {
+    "calories": número,
+    "protein": número,
+    "carbs": número,
+    "fat": número,
+    "fiber": número
+  },
+  "note": "nota breve en español, máx 10 palabras"
+}
+Usa valores nutricionales promedio realistas por cada 100g.
+Si no puedes identificar la comida con certeza, pon confidence "low".`,
+          },
+        ],
+      }],
+    });
+
+    // ── Parse response ────────────────────────────────────────────────────────
+    const rawText = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+
+    if (!jsonMatch) {
+      return new Response(
+        JSON.stringify({ error: 'No pude identificar el alimento. Intenta con otra foto más clara.' }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Respuesta inválida. Intenta de nuevo.' }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // ── Sanitize & return ─────────────────────────────────────────────────────
+    const per100g = parsed.per100g as Record<string, unknown> ?? {};
+    const result = {
+      name:       String(parsed.name ?? 'Alimento desconocido').slice(0, 100),
+      confidence: ['high', 'medium', 'low'].includes(String(parsed.confidence))
+        ? String(parsed.confidence)
+        : 'low',
+      per100g: {
+        calories: clamp(per100g.calories, 0, 900),
+        protein:  clamp(per100g.protein,  0, 100),
+        carbs:    clamp(per100g.carbs,    0, 100),
+        fat:      clamp(per100g.fat,      0, 100),
+        fiber:    clamp(per100g.fiber,    0, 100),
+      },
+      note: String(parsed.note ?? '').slice(0, 120),
+    };
+
+    return new Response(JSON.stringify(result), {
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (err) {
+    console.error('[scan-food]', err);
+    return new Response(JSON.stringify({ error: 'Error interno del servidor.' }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});

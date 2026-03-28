@@ -58,4 +58,6 @@ export const LIMITS = {
   foodLog:      { maxCalls: 20, windowMs: 60_000 },
   // Water update: max 20 per 60 s
   waterUpdate:  { maxCalls: 20, windowMs: 60_000 },
+  // AI food scan: max 20 per hour (mirrors server-side limit)
+  aiScan:       { maxCalls: 20, windowMs: 60 * 60_000 },
 };

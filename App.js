@@ -11,6 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import Svg, { Circle, Line } from 'react-native-svg';
 import { supabase } from './supabaseConfig';
 import { checkRateLimit, showRateLimitAlert, LIMITS } from './src/utils/rateLimiter';
+import FoodScannerModal from './src/components/FoodScannerModal';
 
 const { width: W } = Dimensions.get('window');
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -1020,6 +1021,7 @@ function LogTab({ today, onAddFood, onRemoveFood, lang }) {
   const [results,   setResults]   = useState([]);
   const [meal,      setMeal]      = useState('breakfast');
   const [showForm,  setShowForm]  = useState(false);
+  const [showScan,  setShowScan]  = useState(false);
   const [cName,     setCName]     = useState('');
   const [cWeight,   setCWeight]   = useState('');
   const [cCal,      setCCal]      = useState('');
@@ -1156,11 +1158,31 @@ function LogTab({ today, onAddFood, onRemoveFood, lang }) {
               </TouchableOpacity>
             </View>
           ) : (
-            /* ── "Add food" button — always visible ── */
-            <TouchableOpacity onPress={() => openForm()} style={{ backgroundColor: C.purple, borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginBottom: 8 }}>
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>{tr('addFoodManually')}</Text>
-            </TouchableOpacity>
+            /* ── "Add food" + camera scan buttons ── */
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 8 }}>
+              <TouchableOpacity onPress={() => openForm()} style={{ flex: 1, backgroundColor: C.purple, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>{tr('addFoodManually')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  const rl = checkRateLimit('aiScan', LIMITS.aiScan.maxCalls, LIMITS.aiScan.windowMs);
+                  if (!rl.allowed) { showRateLimitAlert(rl.retryAfterMs, 'scanning food'); return; }
+                  setShowScan(true);
+                }}
+                style={{ backgroundColor: C.elevated, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.borderBright }}
+              >
+                <Text style={{ fontSize: 22 }}>📷</Text>
+              </TouchableOpacity>
+            </View>
           )}
+
+          <FoodScannerModal
+            visible={showScan}
+            onClose={() => setShowScan(false)}
+            onAddFood={(food) => { onAddFood({ ...food, meal }); setShowScan(false); }}
+            meal={meal}
+            lang={lang}
+          />
 
           {/* Logged meals */}
           {meals.map(m => {
