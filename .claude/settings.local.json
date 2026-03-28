@@ -29,7 +29,9 @@
       "Bash(python -c \":*)",
       "Bash(rm firebaseConfig.js)",
       "Bash(npm uninstall:*)",
-      "Bash(npm audit:*)"
+      "Bash(npm audit:*)",
+      "Bash(supabase:*)",
+      "Bash(winget install:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
