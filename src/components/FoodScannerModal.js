@@ -304,7 +304,6 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
       setStep('result');
     } catch (e) {
       console.warn('[FoodScanner] unexpected error', e);
-      Alert.alert('Debug error', String(e?.message ?? e));
       setError(e?.message ?? tr.errGeneric);
       setStep('preview');
     }

@@ -1,3 +1,15 @@
 node_modules
 .env
+.env.local
+.env.*.local
 .vercel
+
+# Build output (may contain baked-in EXPO_PUBLIC_* secrets)
+dist/
+web/
+web-build/
+.expo/
+
+# Config files that may hold real credentials
+firebaseConfig.js
+supabaseConfig.js

@@ -1822,9 +1822,13 @@ export default function App() {
       if (session?.user) loadUserData(session.user);
       else { setScreen(SCREENS.WELCOME); setLoadingAuth(false); }
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) loadUserData(session.user);
-      else { setUser(null); setScreen(SCREENS.WELCOME); }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        setUser(null);
+        setScreen(SCREENS.WELCOME);
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        if (session.user) loadUserData(session.user);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
