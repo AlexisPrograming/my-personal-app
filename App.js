@@ -884,12 +884,12 @@ function SetupScreen({ onComplete, userId, lang = 'en' }) {
               {['male', 'female'].map(s => <Chip key={s} label={s === 'male' ? tr('setup_male') : tr('setup_female')} active={sex === s} onPress={() => setSex(s)} />)}
             </View>
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_age')}</Text><TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="number-pad" placeholder="e.g. 28" placeholderTextColor={C.dim} /></View>
-              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_heightCm')}</Text><TextInput style={styles.input} value={height} onChangeText={setHeight} keyboardType="number-pad" placeholder="e.g. 175" placeholderTextColor={C.dim} /></View>
+              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_age')}</Text><TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="number-pad" placeholder="e.g. 28" placeholderTextColor={C.dim} nativeID="setup-age" /></View>
+              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_heightCm')}</Text><TextInput style={styles.input} value={height} onChangeText={setHeight} keyboardType="number-pad" placeholder="e.g. 175" placeholderTextColor={C.dim} nativeID="setup-height" /></View>
             </View>
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_weightKg')}</Text><TextInput style={styles.input} value={weight} onChangeText={setWeight} keyboardType="number-pad" placeholder="e.g. 75" placeholderTextColor={C.dim} /></View>
-              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_bodyFat')} <Text style={{ color: C.dim }}>({tr('setup_optional')})</Text></Text><TextInput style={styles.input} value={bodyFat} onChangeText={setBodyFat} keyboardType="number-pad" placeholder="e.g. 18" placeholderTextColor={C.dim} /></View>
+              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_weightKg')}</Text><TextInput style={styles.input} value={weight} onChangeText={setWeight} keyboardType="number-pad" placeholder="e.g. 75" placeholderTextColor={C.dim} nativeID="setup-weight" /></View>
+              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_bodyFat')} <Text style={{ color: C.dim }}>({tr('setup_optional')})</Text></Text><TextInput style={styles.input} value={bodyFat} onChangeText={setBodyFat} keyboardType="number-pad" placeholder="e.g. 18" placeholderTextColor={C.dim} nativeID="setup-bodyfat" /></View>
             </View>
           </View>
         )}
@@ -913,7 +913,7 @@ function SetupScreen({ onComplete, userId, lang = 'en' }) {
               {TRAINING_TYPES.map(t => <Chip key={t.id} label={tr('tt_' + t.id.replace(/-/g, ''))} active={trainingType === t.id} onPress={() => setTrainingType(t.id)} />)}
             </View>
             <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6, marginTop: 16 }}>{tr('setup_trainDays')}</Text>
-            <TextInput style={[styles.input, { width: 100 }]} value={trainingDays} onChangeText={setTrainingDays} keyboardType="number-pad" placeholder="e.g. 4" placeholderTextColor={C.dim} />
+            <TextInput style={[styles.input, { width: 100 }]} value={trainingDays} onChangeText={setTrainingDays} keyboardType="number-pad" placeholder="e.g. 4" placeholderTextColor={C.dim} nativeID="setup-training-days" />
           </View>
         )}
 
@@ -926,11 +926,11 @@ function SetupScreen({ onComplete, userId, lang = 'en' }) {
               {DIET_TYPES.map(d => <Chip key={d.id} label={tr('tt_' + d.id.replace(/-/g, ''))} active={diet === d.id} onPress={() => setDiet(d.id)} small />)}
             </View>
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_sleepH')}</Text><TextInput style={styles.input} value={sleep} onChangeText={setSleep} keyboardType="number-pad" placeholder="7" placeholderTextColor={C.dim} /></View>
-              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_timeFrame')}</Text><TextInput style={styles.input} value={timeFrame} onChangeText={setTimeFrame} keyboardType="number-pad" placeholder="3" placeholderTextColor={C.dim} /></View>
+              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_sleepH')}</Text><TextInput style={styles.input} value={sleep} onChangeText={setSleep} keyboardType="number-pad" placeholder="7" placeholderTextColor={C.dim} nativeID="setup-sleep" /></View>
+              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_timeFrame')}</Text><TextInput style={styles.input} value={timeFrame} onChangeText={setTimeFrame} keyboardType="number-pad" placeholder="3" placeholderTextColor={C.dim} nativeID="setup-timeframe" /></View>
             </View>
             <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_waterTarget')}</Text>
-            <TextInput style={[styles.input, { width: 140 }]} value={waterTarget} onChangeText={setWaterTarget} keyboardType="number-pad" placeholder="2500" placeholderTextColor={C.dim} />
+            <TextInput style={[styles.input, { width: 140 }]} value={waterTarget} onChangeText={setWaterTarget} keyboardType="number-pad" placeholder="2500" placeholderTextColor={C.dim} nativeID="setup-water" />
             {/* Live preview */}
             <Card style={{ marginTop: 20 }}>
               <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_macroPreview')}</Text>
@@ -1683,8 +1683,8 @@ function SettingsModal({ visible, onClose, lang, onChangeLang, user, tr }) {
             </TouchableOpacity>
             {section === 'email' && (
               <View style={{ marginTop: 14, gap: 10 }}>
-                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('newEmail')} placeholderTextColor={C.dim} value={newEmail} onChangeText={setNewEmail} autoCapitalize="none" keyboardType="email-address" />
-                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('confirmEmail')} placeholderTextColor={C.dim} value={confEmail} onChangeText={setConfEmail} autoCapitalize="none" keyboardType="email-address" />
+                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('newEmail')} placeholderTextColor={C.dim} value={newEmail} onChangeText={setNewEmail} autoCapitalize="none" keyboardType="email-address" nativeID="change-email-new" autoComplete="email" />
+                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('confirmEmail')} placeholderTextColor={C.dim} value={confEmail} onChangeText={setConfEmail} autoCapitalize="none" keyboardType="email-address" nativeID="change-email-confirm" autoComplete="email" />
                 <Btn label={tr('save')} onPress={handleChangeEmail} loading={loading} />
               </View>
             )}
@@ -1698,9 +1698,9 @@ function SettingsModal({ visible, onClose, lang, onChangeLang, user, tr }) {
             </TouchableOpacity>
             {section === 'password' && (
               <View style={{ marginTop: 14, gap: 10 }}>
-                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('currentPassword')} placeholderTextColor={C.dim} value={currPass} onChangeText={setCurrPass} secureTextEntry />
-                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('newPassword')} placeholderTextColor={C.dim} value={newPass} onChangeText={setNewPass} secureTextEntry />
-                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('confirmPassword')} placeholderTextColor={C.dim} value={confPass} onChangeText={setConfPass} secureTextEntry />
+                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('currentPassword')} placeholderTextColor={C.dim} value={currPass} onChangeText={setCurrPass} secureTextEntry nativeID="change-pass-current" autoComplete="current-password" />
+                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('newPassword')} placeholderTextColor={C.dim} value={newPass} onChangeText={setNewPass} secureTextEntry nativeID="change-pass-new" autoComplete="new-password" />
+                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('confirmPassword')} placeholderTextColor={C.dim} value={confPass} onChangeText={setConfPass} secureTextEntry nativeID="change-pass-confirm" autoComplete="new-password" />
                 <Btn label={tr('save')} onPress={handleChangePassword} loading={loading} />
                 <TouchableOpacity onPress={handleResetEmail} style={{ alignItems: 'center', paddingVertical: 8 }}>
                   <Text style={{ color: C.cyan, fontSize: 13 }}>{tr('resetPasswordEmail')}</Text>
