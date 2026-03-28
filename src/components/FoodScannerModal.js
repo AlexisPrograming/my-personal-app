@@ -127,9 +127,8 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
   const [imageUri,    setImageUri]    = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
   const [mediaType,   setMediaType]   = useState('image/jpeg');
-  const [result,      setResult]      = useState(null);
-  const [amount,      setAmount]      = useState('100');
-  const [unit,        setUnit]        = useState('g');
+  const [result,      setResult]      = useState(null);   // { foods: [...] }
+  const [selections,  setSelections]  = useState([]);     // [{ amount, unit, selected }]
   const [loadingIdx,  setLoadingIdx]  = useState(0);
   const [error,       setError]       = useState('');
 
@@ -158,8 +157,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
     setImageUri(null);
     setImageBase64(null);
     setResult(null);
-    setAmount('100');
-    setUnit('g');
+    setSelections([]);
     setError('');
   }, []);
 
@@ -302,8 +300,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
 
       setResult(data);
       setImageBase64(base64);
-      setAmount('100');
-      setUnit('g');
+      setSelections((data.foods ?? []).map(() => ({ amount: '100', unit: 'g', selected: true })));
       setStep('result');
     } catch (e) {
       console.warn('[FoodScanner] unexpected error', e);
@@ -315,30 +312,34 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
 
   // ── Add to log ──────────────────────────────────────────────────────────────
   const handleAdd = () => {
-    if (!result) return;
-    const macros  = calcMacros(result.per100g, amount, unit);
-    const grams   = toGrams(amount, unit);
-    onAddFood({
-      id:    'scan_' + Date.now(),
-      name:  result.name,
-      cal:   macros.cal,
-      p:     macros.p,
-      c:     macros.c,
-      f:     macros.f,
-      unit:  `${grams}g`,
-      meal,
-      logId: Date.now().toString(),
+    if (!result?.foods) return;
+    const now = Date.now();
+    result.foods.forEach((food, i) => {
+      const sel = selections[i];
+      if (!sel?.selected || !(parseFloat(sel.amount) > 0)) return;
+      const macros = calcMacros(food.per100g, sel.amount, sel.unit);
+      const grams  = toGrams(sel.amount, sel.unit);
+      onAddFood({
+        id:    `scan_${now}_${i}`,
+        name:  food.name,
+        cal:   macros.cal,
+        p:     macros.p,
+        c:     macros.c,
+        f:     macros.f,
+        unit:  `${grams}g`,
+        meal,
+        logId: String(now + i),
+      });
     });
     reset();
     onClose();
   };
 
-  // ── Computed macros ─────────────────────────────────────────────────────────
-  const macros    = result ? calcMacros(result.per100g, amount, unit) : null;
-  const totalCals = macros?.cal ?? 0;
-  const protPct   = macros && totalCals > 0 ? Math.round((macros.p * 4 / totalCals) * 100) : 0;
-  const carbPct   = macros && totalCals > 0 ? Math.round((macros.c * 4 / totalCals) * 100) : 0;
-  const fatPct    = macros && totalCals > 0 ? Math.round((macros.f * 9 / totalCals) * 100) : 0;
+  const toggleSelected = (i) =>
+    setSelections(prev => prev.map((s, idx) => idx === i ? { ...s, selected: !s.selected } : s));
+
+  const updateSelection = (i, patch) =>
+    setSelections(prev => prev.map((s, idx) => idx === i ? { ...s, ...patch } : s));
 
   const spinStyle = {
     transform: [{
@@ -401,115 +402,125 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
             </View>
           )}
 
-          {/* ── RESULT: food card ── */}
-          {step === 'result' && result && (
+          {/* ── RESULT: multi-food cards ── */}
+          {step === 'result' && result?.foods && (
             <View style={styles.section}>
 
-              {/* Food name + confidence */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
-                <Text style={styles.foodName}>{result.name}</Text>
-                <ConfidenceBadge level={result.confidence} lang={lang} />
-              </View>
+              <Text style={styles.sectionTitle}>
+                {result.foods.length === 1
+                  ? (lang === 'es' ? '1 alimento detectado' : '1 food detected')
+                  : (lang === 'es' ? `${result.foods.length} alimentos detectados` : `${result.foods.length} foods detected`)}
+              </Text>
 
-              {result.note ? (
-                <Text style={styles.noteText}>{result.note}</Text>
-              ) : null}
-
-              {/* Low confidence warning */}
-              {result.confidence === 'low' && (
-                <View style={styles.warnBox}>
-                  <Text style={{ color: C.amber, fontSize: 12 }}>⚠️ {tr.lowWarn}</Text>
-                </View>
-              )}
-
-              {/* Amount input */}
-              <Text style={styles.label}>{tr.amountLabel}</Text>
-              <View style={styles.amountRow}>
-                <TextInput
-                  style={styles.amountInput}
-                  value={amount}
-                  onChangeText={v => setAmount(v.replace(/[^0-9.]/g, ''))}
-                  keyboardType="decimal-pad"
-                  selectTextOnFocus
-                />
-                {/* Unit toggle */}
-                <View style={styles.unitRow}>
-                  {tr.units.map(u => (
-                    <TouchableOpacity
-                      key={u}
-                      onPress={() => setUnit(u)}
-                      style={[styles.unitBtn, unit === u && styles.unitBtnActive]}
-                    >
-                      <Text style={[styles.unitBtnText, unit === u && { color: '#fff' }]}>{u}</Text>
+              {result.foods.map((food, i) => {
+                const sel    = selections[i] ?? { amount: '100', unit: 'g', selected: true };
+                const macros = calcMacros(food.per100g, sel.amount, sel.unit);
+                const totalCals = macros.cal;
+                const protPct = totalCals > 0 ? Math.round((macros.p * 4 / totalCals) * 100) : 0;
+                const carbPct = totalCals > 0 ? Math.round((macros.c * 4 / totalCals) * 100) : 0;
+                const fatPct  = totalCals > 0 ? Math.round((macros.f * 9 / totalCals) * 100) : 0;
+                return (
+                  <View key={i} style={[styles.foodCard, !sel.selected && { opacity: 0.45 }]}>
+                    {/* Checkbox + name + confidence */}
+                    <TouchableOpacity onPress={() => toggleSelected(i)}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <View style={[styles.checkbox, sel.selected && styles.checkboxActive]}>
+                        {sel.selected && <Text style={{ color: '#fff', fontSize: 10, lineHeight: 14 }}>✓</Text>}
+                      </View>
+                      <Text style={[styles.foodName, { flex: 1 }]}>{food.name}</Text>
+                      <ConfidenceBadge level={food.confidence} lang={lang} />
                     </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
 
-              {/* Quick amounts */}
-              <View style={styles.quickRow}>
-                {[50, 100, 150, 200].map(q => (
-                  <TouchableOpacity
-                    key={q}
-                    onPress={() => { setAmount(String(q)); setUnit('g'); }}
-                    style={[styles.quickBtn, amount === String(q) && unit === 'g' && styles.quickBtnActive]}
-                  >
-                    <Text style={[styles.quickBtnText, amount === String(q) && unit === 'g' && { color: C.purple }]}>
-                      {q}g
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                    {food.note ? <Text style={styles.noteText}>{food.note}</Text> : null}
+                    {food.confidence === 'low' && (
+                      <View style={styles.warnBox}>
+                        <Text style={{ color: C.amber, fontSize: 12 }}>⚠️ {tr.lowWarn}</Text>
+                      </View>
+                    )}
 
-              {/* Macro table */}
-              {macros && (
-                <View style={styles.macroCard}>
-                  <View style={styles.macroRow}>
-                    <Text style={styles.macroLabel}>{tr.macros.cal}</Text>
-                    <Text style={[styles.macroValue, { color: C.amber }]}>{macros.cal} kcal</Text>
+                    {sel.selected && (
+                      <>
+                        <Text style={[styles.label, { marginTop: 8 }]}>{tr.amountLabel}</Text>
+                        <View style={styles.amountRow}>
+                          <TextInput
+                            style={styles.amountInput}
+                            value={sel.amount}
+                            onChangeText={v => updateSelection(i, { amount: v.replace(/[^0-9.]/g, '') })}
+                            keyboardType="decimal-pad"
+                            selectTextOnFocus
+                          />
+                          <View style={styles.unitRow}>
+                            {tr.units.map(u => (
+                              <TouchableOpacity key={u} onPress={() => updateSelection(i, { unit: u })}
+                                style={[styles.unitBtn, sel.unit === u && styles.unitBtnActive]}>
+                                <Text style={[styles.unitBtnText, sel.unit === u && { color: '#fff' }]}>{u}</Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        </View>
+                        <View style={styles.quickRow}>
+                          {[50, 100, 150, 200].map(q => (
+                            <TouchableOpacity key={q}
+                              onPress={() => updateSelection(i, { amount: String(q), unit: 'g' })}
+                              style={[styles.quickBtn, sel.amount === String(q) && sel.unit === 'g' && styles.quickBtnActive]}>
+                              <Text style={[styles.quickBtnText, sel.amount === String(q) && sel.unit === 'g' && { color: C.purple }]}>{q}g</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                        <View style={[styles.macroCard, { marginTop: 8 }]}>
+                          <View style={styles.macroRow}>
+                            <Text style={styles.macroLabel}>{tr.macros.cal}</Text>
+                            <Text style={[styles.macroValue, { color: C.amber }]}>{macros.cal} kcal</Text>
+                          </View>
+                          {[
+                            { key: 'p', color: C.cyan,  label: tr.macros.p },
+                            { key: 'c', color: C.green, label: tr.macros.c },
+                            { key: 'f', color: C.amber, label: tr.macros.f },
+                            { key: 'fiber', color: C.muted, label: tr.macros.fiber },
+                          ].map(({ key, color, label }) => (
+                            <View key={key} style={styles.macroRow}>
+                              <Text style={styles.macroLabel}>{label}</Text>
+                              <Text style={[styles.macroValue, { color }]}>{macros[key]}g</Text>
+                            </View>
+                          ))}
+                          {totalCals > 0 && (
+                            <View style={{ marginTop: 8 }}>
+                              <View style={styles.macroBar}>
+                                <View style={[styles.macroBarSeg, { flex: protPct, backgroundColor: C.cyan }]} />
+                                <View style={[styles.macroBarSeg, { flex: carbPct, backgroundColor: C.green }]} />
+                                <View style={[styles.macroBarSeg, { flex: fatPct,  backgroundColor: C.amber }]} />
+                              </View>
+                              <View style={styles.macroBarLegend}>
+                                <Text style={[styles.legendText, { color: C.cyan  }]}>P {protPct}%</Text>
+                                <Text style={[styles.legendText, { color: C.green }]}>C {carbPct}%</Text>
+                                <Text style={[styles.legendText, { color: C.amber }]}>F {fatPct}%</Text>
+                              </View>
+                            </View>
+                          )}
+                        </View>
+                      </>
+                    )}
                   </View>
-                  {[
-                    { key: 'p',     color: C.cyan,   label: tr.macros.p },
-                    { key: 'c',     color: C.green,  label: tr.macros.c },
-                    { key: 'f',     color: C.amber,  label: tr.macros.f },
-                    { key: 'fiber', color: C.muted,  label: tr.macros.fiber },
-                  ].map(({ key, color, label }) => (
-                    <View key={key} style={styles.macroRow}>
-                      <Text style={styles.macroLabel}>{label}</Text>
-                      <Text style={[styles.macroValue, { color }]}>{macros[key]}g</Text>
-                    </View>
-                  ))}
-
-                  {/* Macro distribution bar */}
-                  {totalCals > 0 && (
-                    <View style={{ marginTop: 12 }}>
-                      <View style={styles.macroBar}>
-                        <View style={[styles.macroBarSeg, { flex: protPct, backgroundColor: C.cyan }]} />
-                        <View style={[styles.macroBarSeg, { flex: carbPct, backgroundColor: C.green }]} />
-                        <View style={[styles.macroBarSeg, { flex: fatPct,  backgroundColor: C.amber }]} />
-                      </View>
-                      <View style={styles.macroBarLegend}>
-                        <Text style={[styles.legendText, { color: C.cyan  }]}>P {protPct}%</Text>
-                        <Text style={[styles.legendText, { color: C.green }]}>C {carbPct}%</Text>
-                        <Text style={[styles.legendText, { color: C.amber }]}>F {fatPct}%</Text>
-                      </View>
-                    </View>
-                  )}
-                </View>
-              )}
+                );
+              })}
 
               {/* CTA */}
-              <TouchableOpacity
-                style={[styles.primaryBtn, { marginTop: 16, opacity: parseFloat(amount) > 0 ? 1 : 0.4 }]}
-                onPress={handleAdd}
-                disabled={!(parseFloat(amount) > 0)}
-              >
-                <Text style={styles.primaryBtnText}>
-                  {tr.addToMeal} {meal}
-                </Text>
-              </TouchableOpacity>
+              {(() => {
+                const count = selections.filter(s => s.selected && parseFloat(s.amount) > 0).length;
+                return (
+                  <TouchableOpacity
+                    style={[styles.primaryBtn, { marginTop: 8, opacity: count > 0 ? 1 : 0.4 }]}
+                    onPress={handleAdd}
+                    disabled={count === 0}
+                  >
+                    <Text style={styles.primaryBtnText}>
+                      {tr.addToMeal} {meal}{count > 1 ? ` (${count})` : ''}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })()}
 
-              <TouchableOpacity style={styles.ghostBtn} onPress={() => { setStep('idle'); setImageUri(null); setResult(null); }}>
+              <TouchableOpacity style={styles.ghostBtn} onPress={() => { setStep('idle'); setImageUri(null); setResult(null); setSelections([]); }}>
                 <Text style={styles.ghostBtnText}>{lang === 'es' ? '↩ Escanear otra' : '↩ Scan another'}</Text>
               </TouchableOpacity>
             </View>
@@ -573,6 +584,12 @@ const styles = StyleSheet.create({
   macroBarSeg:  { height: 6 },
   macroBarLegend:{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 4 },
   legendText:   { fontSize: 11, fontWeight: '600' },
+  sectionTitle: { color: C.muted, fontSize: 13, fontWeight: '700', letterSpacing: 0.5, marginBottom: 4 },
+  foodCard:     { backgroundColor: C.card, borderRadius: 14, padding: 14,
+                  borderWidth: 1, borderColor: C.border },
+  checkbox:     { width: 20, height: 20, borderRadius: 6, borderWidth: 1.5,
+                  borderColor: C.dim, alignItems: 'center', justifyContent: 'center' },
+  checkboxActive:{ backgroundColor: C.purpleD, borderColor: C.purple },
 });
 
 // purpleD needed in styles

@@ -104,7 +104,7 @@ serve(async (req) => {
 
     const message = await anthropic.messages.create({
       model:      'claude-sonnet-4-20250514',
-      max_tokens: 512,
+      max_tokens: 1024,
       messages: [{
         role: 'user',
         content: [
@@ -114,21 +114,26 @@ serve(async (req) => {
           },
           {
             type: 'text',
-            text: `Analiza esta imagen de comida y responde ÚNICAMENTE con un objeto JSON sin markdown ni explicación. Estructura:
+            text: `Analiza esta imagen de comida e identifica TODOS los alimentos visibles. Responde ÚNICAMENTE con un objeto JSON sin markdown ni explicación. Estructura:
 {
-  "name": "nombre del alimento en español",
-  "confidence": "high|medium|low",
-  "per100g": {
-    "calories": número,
-    "protein": número,
-    "carbs": número,
-    "fat": número,
-    "fiber": número
-  },
-  "note": "nota breve en español, máx 10 palabras"
+  "foods": [
+    {
+      "name": "nombre del alimento en español",
+      "confidence": "high|medium|low",
+      "per100g": {
+        "calories": número,
+        "protein": número,
+        "carbs": número,
+        "fat": número,
+        "fiber": número
+      },
+      "note": "nota breve en español, máx 10 palabras"
+    }
+  ]
 }
+Si solo hay un alimento, incluye un único elemento en el array.
 Usa valores nutricionales promedio realistas por cada 100g.
-Si no puedes identificar la comida con certeza, pon confidence "low".`,
+Si no puedes identificar un alimento con certeza, pon confidence "low".`,
           },
         ],
       }],
@@ -156,21 +161,33 @@ Si no puedes identificar la comida con certeza, pon confidence "low".`,
     }
 
     // ── Sanitize & return ─────────────────────────────────────────────────────
-    const per100g = parsed.per100g as Record<string, unknown> ?? {};
-    const result = {
-      name:       String(parsed.name ?? 'Alimento desconocido').slice(0, 100),
-      confidence: ['high', 'medium', 'low'].includes(String(parsed.confidence))
-        ? String(parsed.confidence)
-        : 'low',
-      per100g: {
-        calories: clamp(per100g.calories, 0, 900),
-        protein:  clamp(per100g.protein,  0, 100),
-        carbs:    clamp(per100g.carbs,    0, 100),
-        fat:      clamp(per100g.fat,      0, 100),
-        fiber:    clamp(per100g.fiber,    0, 100),
-      },
-      note: String(parsed.note ?? '').slice(0, 120),
+    const rawFoods = Array.isArray(parsed.foods) ? parsed.foods : [];
+    if (rawFoods.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'No pude identificar el alimento. Intenta con otra foto más clara.' }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    const sanitizeFood = (item: Record<string, unknown>) => {
+      const p = (item.per100g as Record<string, unknown>) ?? {};
+      return {
+        name:       String(item.name ?? 'Alimento desconocido').slice(0, 100),
+        confidence: ['high', 'medium', 'low'].includes(String(item.confidence))
+          ? String(item.confidence)
+          : 'low',
+        per100g: {
+          calories: clamp(p.calories, 0, 900),
+          protein:  clamp(p.protein,  0, 100),
+          carbs:    clamp(p.carbs,    0, 100),
+          fat:      clamp(p.fat,      0, 100),
+          fiber:    clamp(p.fiber,    0, 100),
+        },
+        note: String(item.note ?? '').slice(0, 120),
+      };
     };
+
+    const result = { foods: rawFoods.slice(0, 10).map(f => sanitizeFood(f as Record<string, unknown>)) };
 
     return new Response(JSON.stringify(result), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
