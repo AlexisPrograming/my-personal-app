@@ -55,11 +55,12 @@ const STRINGS = {
     signOut:'Sign Out', settings:'Settings', logWeight:'Log', weightPlaceholder:"Today's weight (kg)",
     settingsTitle:'Settings', language:'Language', english:'English', spanish:'Spanish',
     changeEmail:'Change Email', newEmail:'New email address', confirmEmail:'Confirm new email',
-    changePassword:'Change Password', newPassword:'New password (min 12 chars)', confirmPassword:'Confirm new password',
-    resetPasswordEmail:'Reset Password via Email', resetSent:'Reset email sent! Check your inbox.',
+    changePassword:'Change Password', currentPassword:'Current password', newPassword:'New password (min 12 chars)', confirmPassword:'Confirm new password',
+    resetPasswordEmail:'Forgot password? Reset via Email', resetSent:'Reset email sent! Check your inbox.',
     emailUpdated:'Email update sent! Check your new inbox to confirm.',
     passwordUpdated:'Password updated successfully!',
     passwordMismatch:'Passwords do not match.', emailMismatch:'Emails do not match.',
+    wrongPassword:'Current password is incorrect.',
     close:'Close', aiCoach:'⚡ AI Coach', online:'● Online', askCoach:'Ask your coach…',
     historyEmpty:'No history yet.\nStart logging to see your progress here.',
     gotIt:'Got it!', remove:'Remove',
@@ -144,11 +145,12 @@ const STRINGS = {
     signOut:'Cerrar Sesión', settings:'Ajustes', logWeight:'Registrar', weightPlaceholder:'Peso de hoy (kg)',
     settingsTitle:'Ajustes', language:'Idioma', english:'Inglés', spanish:'Español',
     changeEmail:'Cambiar Email', newEmail:'Nuevo correo electrónico', confirmEmail:'Confirmar nuevo correo',
-    changePassword:'Cambiar Contraseña', newPassword:'Nueva contraseña (mín. 12 caracteres)', confirmPassword:'Confirmar nueva contraseña',
-    resetPasswordEmail:'Restablecer contraseña por Email', resetSent:'¡Email enviado! Revisa tu bandeja.',
+    changePassword:'Cambiar Contraseña', currentPassword:'Contraseña actual', newPassword:'Nueva contraseña (mín. 12 caracteres)', confirmPassword:'Confirmar nueva contraseña',
+    resetPasswordEmail:'¿Olvidaste tu contraseña? Restablecer por Email', resetSent:'¡Email enviado! Revisa tu bandeja.',
     emailUpdated:'¡Actualización enviada! Confirma en tu nuevo correo.',
     passwordUpdated:'¡Contraseña actualizada correctamente!',
     passwordMismatch:'Las contraseñas no coinciden.', emailMismatch:'Los correos no coinciden.',
+    wrongPassword:'La contraseña actual es incorrecta.',
     close:'Cerrar', aiCoach:'⚡ Coach IA', online:'● En línea', askCoach:'Pregunta a tu coach…',
     historyEmpty:'Sin historial aún.\nEmpieza a registrar para ver tu progreso.',
     gotIt:'¡Entendido!', remove:'Eliminar',
@@ -1615,12 +1617,13 @@ function SettingsModal({ visible, onClose, lang, onChangeLang, user, tr }) {
   const [section,   setSection]   = useState(null); // 'email' | 'password' | null
   const [newEmail,  setNewEmail]  = useState('');
   const [confEmail, setConfEmail] = useState('');
+  const [currPass,  setCurrPass]  = useState('');
   const [newPass,   setNewPass]   = useState('');
   const [confPass,  setConfPass]  = useState('');
   const [loading,   setLoading]   = useState(false);
   const [msg,       setMsg]       = useState('');
 
-  const reset = () => { setSection(null); setNewEmail(''); setConfEmail(''); setNewPass(''); setConfPass(''); setMsg(''); };
+  const reset = () => { setSection(null); setNewEmail(''); setConfEmail(''); setCurrPass(''); setNewPass(''); setConfPass(''); setMsg(''); };
 
   const handleChangeEmail = async () => {
     if (newEmail !== confEmail) { setMsg(tr('emailMismatch')); return; }
@@ -1632,13 +1635,16 @@ function SettingsModal({ visible, onClose, lang, onChangeLang, user, tr }) {
   };
 
   const handleChangePassword = async () => {
+    if (!currPass) { setMsg(tr('currentPassword') + ' required.'); return; }
     if (newPass !== confPass) { setMsg(tr('passwordMismatch')); return; }
     if (newPass.length < 12) { setMsg('Min 12 characters.'); return; }
     setLoading(true);
+    const { error: authError } = await supabase.auth.signInWithPassword({ email: user?.email, password: currPass });
+    if (authError) { setLoading(false); setMsg(tr('wrongPassword')); return; }
     const { error } = await supabase.auth.updateUser({ password: newPass });
     setLoading(false);
     setMsg(error ? error.message : tr('passwordUpdated'));
-    if (!error) { setNewPass(''); setConfPass(''); }
+    if (!error) { setCurrPass(''); setNewPass(''); setConfPass(''); }
   };
 
   const handleResetEmail = async () => {
@@ -1692,6 +1698,7 @@ function SettingsModal({ visible, onClose, lang, onChangeLang, user, tr }) {
             </TouchableOpacity>
             {section === 'password' && (
               <View style={{ marginTop: 14, gap: 10 }}>
+                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('currentPassword')} placeholderTextColor={C.dim} value={currPass} onChangeText={setCurrPass} secureTextEntry />
                 <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('newPassword')} placeholderTextColor={C.dim} value={newPass} onChangeText={setNewPass} secureTextEntry />
                 <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('confirmPassword')} placeholderTextColor={C.dim} value={confPass} onChangeText={setConfPass} secureTextEntry />
                 <Btn label={tr('save')} onPress={handleChangePassword} loading={loading} />
