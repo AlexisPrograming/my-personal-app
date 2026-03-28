@@ -6,7 +6,6 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import Anthropic from 'https://esm.sh/@anthropic-ai/sdk';
 
 // Restrict CORS to the configured origin (falls back to * only if unset)
 const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '*';
@@ -130,21 +129,34 @@ serve(async (req) => {
     }
 
     // ── Call Claude Vision ────────────────────────────────────────────────────
-    const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') });
+    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+    if (!ANTHROPIC_API_KEY) {
+      console.error('[scan-food] ANTHROPIC_API_KEY not set');
+      return new Response(JSON.stringify({ error: 'Error de configuración del servidor.' }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    const message = await anthropic.messages.create({
-      model:      'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type:   'image',
-            source: { type: 'base64', media_type: mediaType as ValidMediaType, data: imageBase64 },
-          },
-          {
-            type: 'text',
-            text: `Analiza esta imagen de comida e identifica TODOS los alimentos visibles. Responde ÚNICAMENTE con un objeto JSON sin markdown ni explicación. Estructura:
+    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType as ValidMediaType, data: imageBase64 },
+            },
+            {
+              type: 'text',
+              text: `Analiza esta imagen de comida e identifica TODOS los alimentos visibles. Responde ÚNICAMENTE con un objeto JSON sin markdown ni explicación. Estructura:
 {
   "foods": [
     {
@@ -164,13 +176,24 @@ serve(async (req) => {
 Si solo hay un alimento, incluye un único elemento en el array.
 Usa valores nutricionales promedio realistas por cada 100g.
 Si no puedes identificar un alimento con certeza, pon confidence "low".`,
-          },
-        ],
-      }],
+            },
+          ],
+        }],
+      }),
     });
 
+    if (!claudeRes.ok) {
+      const errBody = await claudeRes.text();
+      console.error('[scan-food] Anthropic API error', claudeRes.status, errBody);
+      return new Response(JSON.stringify({ error: 'Error al contactar el servicio de IA.' }), {
+        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const claudeData = await claudeRes.json();
+
     // ── Parse response ────────────────────────────────────────────────────────
-    const rawText = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
+    const rawText = claudeData.content?.[0]?.type === 'text' ? claudeData.content[0].text.trim() : '';
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
 
     if (!jsonMatch) {
