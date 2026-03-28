@@ -263,11 +263,19 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
         return;
       }
 
-      // Step 2: call Edge Function via supabase client (handles apikey + auth automatically)
+      // Step 2: get session token and call Edge Function
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError(lang === 'es' ? 'Sesión expirada. Vuelve a iniciar sesión.' : 'Session expired. Please log in again.');
+        setStep('preview');
+        return;
+      }
+
       let data, fnError;
       try {
         ({ data, error: fnError } = await supabase.functions.invoke('scan-food', {
           body: { imageBase64: base64, mediaType: mt },
+          headers: { Authorization: `Bearer ${session.access_token}` },
         }));
       } catch (e) {
         console.warn('[FoodScanner] fetch error', e);
