@@ -20,7 +20,6 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
 import { supabase } from '../../supabaseConfig';
 
 // ─── Theme (mirrors App.js) ───────────────────────────────────────────────────
@@ -224,20 +223,20 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
 
   // ── Compress & encode ───────────────────────────────────────────────────────
   const compressAndEncode = async (uri) => {
-    // Resize to max 1024px wide, 70% quality, request base64 directly
+    // Resize to 1024px, 70% quality. base64:true works on web (canvas) and native.
     const manipulated = await ImageManipulator.manipulateAsync(
       uri,
       [{ resize: { width: 1024 } }],
       { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true },
     );
 
-    // manipulateAsync returns base64 on web (canvas) and on native SDK 55
     if (manipulated.base64) {
       return { base64: manipulated.base64, mediaType: 'image/jpeg' };
     }
 
-    // Native-only fallback: read the saved file as base64
+    // Native fallback: lazy-require FileSystem so it never loads on web
     if (Platform.OS !== 'web') {
+      const FileSystem = require('expo-file-system');
       const base64 = await FileSystem.readAsStringAsync(manipulated.uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
@@ -308,6 +307,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
       setStep('result');
     } catch (e) {
       console.warn('[FoodScanner] unexpected error', e);
+      Alert.alert('Debug error', String(e?.message ?? e));
       setError(e?.message ?? tr.errGeneric);
       setStep('preview');
     }
