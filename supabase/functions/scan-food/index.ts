@@ -185,7 +185,15 @@ Si no puedes identificar un alimento con certeza, pon confidence "low".`,
     if (!claudeRes.ok) {
       const errBody = await claudeRes.text();
       console.error('[scan-food] Anthropic API error', claudeRes.status, errBody);
-      return new Response(JSON.stringify({ error: 'Error al contactar el servicio de IA.' }), {
+      let userError = 'Error al contactar el servicio de IA.';
+      try {
+        const errJson = JSON.parse(errBody);
+        const msg = errJson?.error?.message ?? '';
+        if (msg.toLowerCase().includes('credit') || msg.toLowerCase().includes('balance')) {
+          userError = 'El servicio de escaneo no está disponible temporalmente. Intenta más tarde.';
+        }
+      } catch { /* ignore */ }
+      return new Response(JSON.stringify({ error: userError }), {
         status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
