@@ -298,9 +298,13 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
         return;
       }
 
-      setResult(data);
+      // Normalize: support both { foods: [...] } and legacy single-food format
+      const normalized = Array.isArray(data.foods)
+        ? data
+        : { foods: [{ name: data.name, confidence: data.confidence, per100g: data.per100g, note: data.note }] };
+      setResult(normalized);
       setImageBase64(base64);
-      setSelections((data.foods ?? []).map(() => ({ amount: '100', unit: 'g', selected: true })));
+      setSelections(normalized.foods.map(() => ({ amount: '100', unit: 'g', selected: true })));
       setStep('result');
     } catch (e) {
       console.warn('[FoodScanner] unexpected error', e);
