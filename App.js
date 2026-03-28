@@ -1844,8 +1844,8 @@ export default function App() {
         setWorkout({ exercises: [], completed: false, id: null });
         setHistoryLoaded(false);
         const [dailyRes, workoutRes] = await Promise.all([
-          supabase.from('daily_logs').select('*').eq('user_id', user.id).eq('log_date', now).single(),
-          supabase.from('workouts').select('*').eq('user_id', user.id).eq('workout_date', now).single(),
+          supabase.from('daily_logs').select('*').eq('user_id', user.id).eq('log_date', now).maybeSingle(),
+          supabase.from('workouts').select('*').eq('user_id', user.id).eq('workout_date', now).maybeSingle(),
         ]);
         if (dailyRes.data)   setTodayLog({ ...dailyRes.data, food_log: dailyRes.data.food_log || [] });
         if (workoutRes.data) setWorkout({ ...workoutRes.data, exercises: workoutRes.data.exercises || [] });
@@ -1876,10 +1876,10 @@ export default function App() {
     setUser(u);
     try {
       const [profileRes, dailyRes, workoutRes, streakRes, weightsRes] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', u.id).single(),
-        supabase.from('daily_logs').select('*').eq('user_id', u.id).eq('log_date', todayISO()).single(),
-        supabase.from('workouts').select('*').eq('user_id', u.id).eq('workout_date', todayISO()).single(),
-        supabase.from('streaks').select('*').eq('user_id', u.id).single(),
+        supabase.from('profiles').select('*').eq('id', u.id).maybeSingle(),
+        supabase.from('daily_logs').select('*').eq('user_id', u.id).eq('log_date', todayISO()).maybeSingle(),
+        supabase.from('workouts').select('*').eq('user_id', u.id).eq('workout_date', todayISO()).maybeSingle(),
+        supabase.from('streaks').select('*').eq('user_id', u.id).maybeSingle(),
         supabase.from('weight_history').select('*').eq('user_id', u.id).order('logged_at', { ascending: true }),
       ]);
       if (profileRes.data) setProfile(profileRes.data);
