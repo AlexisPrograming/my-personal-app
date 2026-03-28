@@ -224,18 +224,27 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
 
   // ── Compress & encode ───────────────────────────────────────────────────────
   const compressAndEncode = async (uri) => {
-    // Resize to max 1024px wide, 70% quality
+    // Resize to max 1024px wide, 70% quality, request base64 directly
     const manipulated = await ImageManipulator.manipulateAsync(
       uri,
       [{ resize: { width: 1024 } }],
-      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG },
+      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true },
     );
-    // Read the compressed file as base64 via FileSystem (more reliable than
-    // the base64 option in manipulateAsync which changed in SDK 53+)
-    const base64 = await FileSystem.readAsStringAsync(manipulated.uri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-    return { base64, mediaType: 'image/jpeg' };
+
+    // manipulateAsync returns base64 on web (canvas) and on native SDK 55
+    if (manipulated.base64) {
+      return { base64: manipulated.base64, mediaType: 'image/jpeg' };
+    }
+
+    // Native-only fallback: read the saved file as base64
+    if (Platform.OS !== 'web') {
+      const base64 = await FileSystem.readAsStringAsync(manipulated.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      return { base64, mediaType: 'image/jpeg' };
+    }
+
+    throw new Error('No se pudo codificar la imagen.');
   };
 
   // ── Scan ────────────────────────────────────────────────────────────────────
