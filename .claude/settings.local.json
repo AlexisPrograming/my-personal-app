@@ -31,7 +31,8 @@
       "Bash(npm uninstall:*)",
       "Bash(npm audit:*)",
       "Bash(supabase:*)",
-      "Bash(winget install:*)"
+      "Bash(winget install:*)",
+      "Bash(ls:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
