@@ -32,7 +32,8 @@
       "Bash(npm audit:*)",
       "Bash(supabase:*)",
       "Bash(winget install:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npx supabase:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
