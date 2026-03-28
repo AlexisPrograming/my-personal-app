@@ -142,7 +142,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
         setLoadingIdx(i => (i + 1) % tr.loading.length);
       }, 1500);
       Animated.loop(Animated.timing(spinAnim, {
-        toValue: 1, duration: 1000, useNativeDriver: true,
+        toValue: 1, duration: 1000, useNativeDriver: Platform.OS !== 'web',
       })).start();
     } else {
       clearInterval(loadingTimer.current);
@@ -178,7 +178,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
           return;
         }
         pickerResult = await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: ['images'],
           quality:    1,
           base64:     false,
         });
@@ -189,7 +189,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
           return;
         }
         pickerResult = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: ['images'],
           quality:    1,
           base64:     false,
         });
