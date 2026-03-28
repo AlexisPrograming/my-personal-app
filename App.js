@@ -723,16 +723,16 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
       {mode === 'signup' && (
         <View style={{ marginBottom: 14 }}>
           <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('auth_username')}</Text>
-          <TextInput style={styles.input} value={username} onChangeText={setUsername} autoCapitalize="none" placeholder="e.g. alexfit" placeholderTextColor={C.dim} />
+          <TextInput style={styles.input} value={username} onChangeText={setUsername} autoCapitalize="none" placeholder="e.g. alexfit" placeholderTextColor={C.dim} id="username" nativeID="username" />
         </View>
       )}
       <View style={{ marginBottom: 14 }}>
         <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('auth_email')}</Text>
-        <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" placeholderTextColor={C.dim} />
+        <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" placeholderTextColor={C.dim} id="email" nativeID="email" autoComplete="email" />
       </View>
       <View style={{ marginBottom: 24 }}>
         <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('auth_password')}</Text>
-        <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry placeholder={tr('auth_minPassword')} placeholderTextColor={C.dim} />
+        <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry placeholder={tr('auth_minPassword')} placeholderTextColor={C.dim} id="password" nativeID="password" autoComplete="current-password" />
       </View>
       {error ? <Text style={{ color: C.red, fontSize: 13, marginBottom: 16, textAlign: 'center' }}>{error}</Text> : null}
       <Btn label={mode === 'signup' ? tr('auth_createBtn') : tr('auth_signInBtn')} onPress={submit} loading={loading} />
