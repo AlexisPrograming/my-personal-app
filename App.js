@@ -667,7 +667,7 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
     setError('');
     const rl = checkRateLimit('auth:submit', LIMITS.authSubmit.maxCalls, LIMITS.authSubmit.windowMs);
     if (!rl.allowed) { setError(`Too many attempts. Please wait ${rl.retryAfterMs}s and try again.`); return; }
-    if (!/\S+@\S+\.\S+/.test(email))   { setError('Enter a valid email.'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('Enter a valid email.'); return; }
     if (password.length < 12)           { setError('Password needs at least 12 characters.'); return; }
     if (mode === 'signup' && username.length < 3) { setError('Username needs at least 3 characters.'); return; }
     if (mode === 'signup' && username.length > 30) { setError('Username must be 30 characters or less.'); return; }

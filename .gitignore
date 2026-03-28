@@ -12,4 +12,3 @@ web-build/
 
 # Config files that may hold real credentials
 firebaseConfig.js
-supabaseConfig.js

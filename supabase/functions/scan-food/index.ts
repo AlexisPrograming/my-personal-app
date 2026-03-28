@@ -2,13 +2,17 @@
 // Securely calls Anthropic Claude Vision to identify food from an image.
 // Deploy: supabase functions deploy scan-food
 // Secrets: supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+//          supabase secrets set ALLOWED_ORIGIN=https://your-app.vercel.app
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import Anthropic from 'https://esm.sh/@anthropic-ai/sdk';
 
+// Restrict CORS to the configured origin (falls back to * only if unset)
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '*';
+
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
@@ -33,6 +37,9 @@ function clamp(value: unknown, min: number, max: number): number {
   return Math.min(Math.round(n * 10) / 10, max);
 }
 
+// Max base64 size: ~4 MB of raw data → ~5.5 MB base64 string
+const MAX_BASE64_LENGTH = 5.5 * 1024 * 1024;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -44,9 +51,17 @@ serve(async (req) => {
     });
   }
 
-  // Body size guard: 5 MB
-  const contentLength = req.headers.get('content-length');
-  if (contentLength && parseInt(contentLength) > 5 * 1024 * 1024) {
+  // Body size guard: read raw body first to enforce limit regardless of headers
+  let rawBody: string;
+  try {
+    rawBody = await req.text();
+  } catch {
+    return new Response(JSON.stringify({ error: 'Error leyendo la solicitud.' }), {
+      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  if (rawBody.length > 6 * 1024 * 1024) {
     return new Response(JSON.stringify({ error: 'Imagen demasiado grande. Máximo 5 MB.' }), {
       status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -82,12 +97,27 @@ serve(async (req) => {
     }
 
     // ── Validate body ─────────────────────────────────────────────────────────
-    const body = await req.json();
-    const { imageBase64, mediaType = 'image/jpeg' } = body;
+    let body: Record<string, unknown>;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return new Response(JSON.stringify({ error: 'JSON inválido.' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { imageBase64, mediaType = 'image/jpeg' } = body as { imageBase64?: unknown; mediaType?: unknown };
 
     if (!imageBase64 || typeof imageBase64 !== 'string' || imageBase64.length < 100) {
       return new Response(JSON.stringify({ error: 'imageBase64 requerido' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // M-3: enforce upper bound on base64 payload
+    if (imageBase64.length > MAX_BASE64_LENGTH) {
+      return new Response(JSON.stringify({ error: 'Imagen demasiado grande. Máximo 4 MB.' }), {
+        status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
