@@ -263,28 +263,12 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
         return;
       }
 
-      // Step 2: get auth session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        setError(lang === 'es' ? 'Sesión expirada. Vuelve a iniciar sesión.' : 'Session expired. Please log in again.');
-        setStep('preview');
-        return;
-      }
-
-      // Step 3: call Edge Function
-      const supabaseUrl = (process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '');
-      let response, data;
+      // Step 2: call Edge Function via supabase client (handles apikey + auth automatically)
+      let data, fnError;
       try {
-        response = await fetch(`${supabaseUrl}/functions/v1/scan-food`, {
-          method:  'POST',
-          headers: {
-            'Content-Type':  'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-            'apikey':        process.env.EXPO_PUBLIC_SUPABASE_ANON ?? '',
-          },
-          body: JSON.stringify({ imageBase64: base64, mediaType: mt }),
-        });
-        data = await response.json();
+        ({ data, error: fnError } = await supabase.functions.invoke('scan-food', {
+          body: { imageBase64: base64, mediaType: mt },
+        }));
       } catch (e) {
         console.warn('[FoodScanner] fetch error', e);
         setError(lang === 'es' ? 'Error de red. Verifica tu conexión.' : 'Network error. Check your connection.');
@@ -292,8 +276,8 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
         return;
       }
 
-      if (!response.ok) {
-        setError(data?.error ?? tr.errGeneric);
+      if (fnError) {
+        setError(fnError.message ?? tr.errGeneric);
         setStep('preview');
         return;
       }
