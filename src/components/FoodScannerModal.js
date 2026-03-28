@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system';
 import { supabase } from '../../supabaseConfig';
 
 // ─── Theme (mirrors App.js) ───────────────────────────────────────────────────
@@ -223,12 +224,18 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
 
   // ── Compress & encode ───────────────────────────────────────────────────────
   const compressAndEncode = async (uri) => {
+    // Resize to max 1024px wide, 70% quality
     const manipulated = await ImageManipulator.manipulateAsync(
       uri,
       [{ resize: { width: 1024 } }],
-      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true },
+      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG },
     );
-    return { base64: manipulated.base64, mediaType: 'image/jpeg' };
+    // Read the compressed file as base64 via FileSystem (more reliable than
+    // the base64 option in manipulateAsync which changed in SDK 53+)
+    const base64 = await FileSystem.readAsStringAsync(manipulated.uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    return { base64, mediaType: 'image/jpeg' };
   };
 
   // ── Scan ────────────────────────────────────────────────────────────────────
@@ -239,26 +246,48 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
     setLoadingIdx(0);
 
     try {
-      const { base64, mediaType: mt } = await compressAndEncode(imageUri);
+      // Step 1: compress image
+      let base64, mt;
+      try {
+        ({ base64, mediaType: mt } = await compressAndEncode(imageUri));
+      } catch (e) {
+        console.warn('[FoodScanner] compress error', e);
+        setError(lang === 'es' ? 'Error al procesar la imagen.' : 'Error processing image.');
+        setStep('preview');
+        return;
+      }
 
+      // Step 2: get auth session
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error('Not authenticated');
+      if (!session?.access_token) {
+        setError(lang === 'es' ? 'Sesión expirada. Vuelve a iniciar sesión.' : 'Session expired. Please log in again.');
+        setStep('preview');
+        return;
+      }
 
-      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-      const response    = await fetch(`${supabaseUrl}/functions/v1/scan-food`, {
-        method:  'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey':        process.env.EXPO_PUBLIC_SUPABASE_ANON,
-        },
-        body: JSON.stringify({ imageBase64: base64, mediaType: mt }),
-      });
-
-      const data = await response.json();
+      // Step 3: call Edge Function
+      const supabaseUrl = (process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '');
+      let response, data;
+      try {
+        response = await fetch(`${supabaseUrl}/functions/v1/scan-food`, {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey':        process.env.EXPO_PUBLIC_SUPABASE_ANON ?? '',
+          },
+          body: JSON.stringify({ imageBase64: base64, mediaType: mt }),
+        });
+        data = await response.json();
+      } catch (e) {
+        console.warn('[FoodScanner] fetch error', e);
+        setError(lang === 'es' ? 'Error de red. Verifica tu conexión.' : 'Network error. Check your connection.');
+        setStep('preview');
+        return;
+      }
 
       if (!response.ok) {
-        setError(data.error ?? tr.errGeneric);
+        setError(data?.error ?? tr.errGeneric);
         setStep('preview');
         return;
       }
@@ -269,8 +298,8 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
       setUnit('g');
       setStep('result');
     } catch (e) {
-      console.warn('[FoodScanner] scan error', e);
-      setError(tr.errGeneric);
+      console.warn('[FoodScanner] unexpected error', e);
+      setError(e?.message ?? tr.errGeneric);
       setStep('preview');
     }
   };
