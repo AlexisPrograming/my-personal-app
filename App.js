@@ -1886,11 +1886,11 @@ function SettingsModal({ visible, onClose, lang, onChangeLang, user, tr }) {
 
 // ─── TAB BAR ─────────────────────────────────────────────────────────────────
 const NAV_TABS = [
-  { id: 'TODAY', label: 'Today',     icon: '◎' },
-  { id: 'LOG',   label: 'Nutrition', icon: '⊕' },
-  { id: 'TRAIN', label: 'Train',     icon: '△' },
-  { id: 'HIST',  label: 'History',   icon: '▤' },
-  { id: 'ME',    label: 'Me',        icon: '◉' },
+  { id: 'TODAY', label: 'Today',     icon: '🏠' },
+  { id: 'LOG',   label: 'Nutrition', icon: '🥗' },
+  { id: 'TRAIN', label: 'Train',     icon: '💪' },
+  { id: 'HIST',  label: 'History',   icon: '📊' },
+  { id: 'ME',    label: 'Me',        icon: '👤' },
   { id: 'ORBIT', label: 'Orbit',     icon: '🌐' },
 ];
 
