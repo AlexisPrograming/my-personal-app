@@ -1622,6 +1622,7 @@ function SettingsModal({ visible, onClose, lang, onChangeLang, user, tr }) {
   const [confPass,  setConfPass]  = useState('');
   const [loading,   setLoading]   = useState(false);
   const [msg,       setMsg]       = useState('');
+  const isDesktop = useIsDesktop();
 
   const reset = () => { setSection(null); setNewEmail(''); setConfEmail(''); setCurrPass(''); setNewPass(''); setConfPass(''); setMsg(''); };
 
@@ -1654,62 +1655,67 @@ function SettingsModal({ visible, onClose, lang, onChangeLang, user, tr }) {
     setMsg(error ? error.message : tr('resetSent'));
   };
 
+  const cardStyle = isDesktop ? { marginBottom: 10, padding: 14, borderRadius: 12 } : { marginBottom: 16 };
+  const inputStyle = isDesktop ? { paddingVertical: 7, fontSize: 13 } : { paddingVertical: 10 };
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { reset(); onClose(); }}>
       <View style={{ flex: 1, backgroundColor: C.bg }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20, paddingTop: 24, borderBottomWidth: 1, borderBottomColor: C.border }}>
-          <Text style={{ color: C.text, fontWeight: '800', fontSize: 18, flex: 1 }}>{tr('settingsTitle')}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', padding: isDesktop ? 16 : 20, paddingTop: isDesktop ? 18 : 24, borderBottomWidth: 1, borderBottomColor: C.border, maxWidth: isDesktop ? 520 : undefined, width: '100%', alignSelf: isDesktop ? 'center' : undefined }}>
+          <Text style={{ color: C.text, fontWeight: '800', fontSize: isDesktop ? 16 : 18, flex: 1 }}>{tr('settingsTitle')}</Text>
           <TouchableOpacity onPress={() => { reset(); onClose(); }} style={{ padding: 8 }}><Text style={{ color: C.muted, fontSize: 22 }}>×</Text></TouchableOpacity>
         </View>
-        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+        <ScrollView contentContainerStyle={{ padding: isDesktop ? 24 : 20, paddingBottom: 40, alignItems: isDesktop ? 'center' : undefined }}>
+          <View style={{ width: '100%', maxWidth: isDesktop ? 520 : undefined }}>
 
-          {/* Language */}
-          <Card style={{ marginBottom: 16 }}>
-            <Text style={{ color: C.muted, fontSize: 11, letterSpacing: 1, marginBottom: 12 }}>{tr('language').toUpperCase()}</Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              {[{ code: 'en', label: tr('english') }, { code: 'es', label: tr('spanish') }].map(l => (
-                <TouchableOpacity key={l.code} onPress={() => onChangeLang(l.code)} style={{ flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center', backgroundColor: lang === l.code ? C.purple : C.elevated, borderWidth: 1, borderColor: lang === l.code ? C.purple : C.border }}>
-                  <Text style={{ color: lang === l.code ? '#fff' : C.muted, fontWeight: '700' }}>{l.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </Card>
-
-          {/* Change Email */}
-          <Card style={{ marginBottom: 16 }}>
-            <TouchableOpacity onPress={() => setSection(section === 'email' ? null : 'email')} style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ color: C.text, fontWeight: '700', fontSize: 15, flex: 1 }}>{tr('changeEmail')}</Text>
-              <Text style={{ color: C.purple, fontSize: 18 }}>{section === 'email' ? '▲' : '▼'}</Text>
-            </TouchableOpacity>
-            {section === 'email' && (
-              <View style={{ marginTop: 14, gap: 10 }}>
-                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('newEmail')} placeholderTextColor={C.dim} value={newEmail} onChangeText={setNewEmail} autoCapitalize="none" keyboardType="email-address" nativeID="change-email-new" autoComplete="email" />
-                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('confirmEmail')} placeholderTextColor={C.dim} value={confEmail} onChangeText={setConfEmail} autoCapitalize="none" keyboardType="email-address" nativeID="change-email-confirm" autoComplete="email" />
-                <Btn label={tr('save')} onPress={handleChangeEmail} loading={loading} />
+            {/* Language */}
+            <Card style={cardStyle}>
+              <Text style={{ color: C.muted, fontSize: 11, letterSpacing: 1, marginBottom: isDesktop ? 8 : 12 }}>{tr('language').toUpperCase()}</Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {[{ code: 'en', label: tr('english') }, { code: 'es', label: tr('spanish') }].map(l => (
+                  <TouchableOpacity key={l.code} onPress={() => onChangeLang(l.code)} style={{ flex: 1, borderRadius: 10, paddingVertical: isDesktop ? 7 : 10, alignItems: 'center', backgroundColor: lang === l.code ? C.purple : C.elevated, borderWidth: 1, borderColor: lang === l.code ? C.purple : C.border }}>
+                    <Text style={{ color: lang === l.code ? '#fff' : C.muted, fontWeight: '700', fontSize: isDesktop ? 13 : 14 }}>{l.label}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-            )}
-          </Card>
+            </Card>
 
-          {/* Change Password */}
-          <Card style={{ marginBottom: 16 }}>
-            <TouchableOpacity onPress={() => setSection(section === 'password' ? null : 'password')} style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ color: C.text, fontWeight: '700', fontSize: 15, flex: 1 }}>{tr('changePassword')}</Text>
-              <Text style={{ color: C.purple, fontSize: 18 }}>{section === 'password' ? '▲' : '▼'}</Text>
-            </TouchableOpacity>
-            {section === 'password' && (
-              <View style={{ marginTop: 14, gap: 10 }}>
-                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('currentPassword')} placeholderTextColor={C.dim} value={currPass} onChangeText={setCurrPass} secureTextEntry nativeID="change-pass-current" autoComplete="current-password" />
-                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('newPassword')} placeholderTextColor={C.dim} value={newPass} onChangeText={setNewPass} secureTextEntry nativeID="change-pass-new" autoComplete="new-password" />
-                <TextInput style={[styles.input, { paddingVertical: 10 }]} placeholder={tr('confirmPassword')} placeholderTextColor={C.dim} value={confPass} onChangeText={setConfPass} secureTextEntry nativeID="change-pass-confirm" autoComplete="new-password" />
-                <Btn label={tr('save')} onPress={handleChangePassword} loading={loading} />
-                <TouchableOpacity onPress={handleResetEmail} style={{ alignItems: 'center', paddingVertical: 8 }}>
-                  <Text style={{ color: C.cyan, fontSize: 13 }}>{tr('resetPasswordEmail')}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </Card>
+            {/* Change Email */}
+            <Card style={cardStyle}>
+              <TouchableOpacity onPress={() => setSection(section === 'email' ? null : 'email')} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ color: C.text, fontWeight: '700', fontSize: isDesktop ? 13 : 15, flex: 1 }}>{tr('changeEmail')}</Text>
+                <Text style={{ color: C.purple, fontSize: 18 }}>{section === 'email' ? '▲' : '▼'}</Text>
+              </TouchableOpacity>
+              {section === 'email' && (
+                <View style={{ marginTop: isDesktop ? 10 : 14, gap: isDesktop ? 7 : 10 }}>
+                  <TextInput style={[styles.input, inputStyle]} placeholder={tr('newEmail')} placeholderTextColor={C.dim} value={newEmail} onChangeText={setNewEmail} autoCapitalize="none" keyboardType="email-address" nativeID="change-email-new" autoComplete="email" />
+                  <TextInput style={[styles.input, inputStyle]} placeholder={tr('confirmEmail')} placeholderTextColor={C.dim} value={confEmail} onChangeText={setConfEmail} autoCapitalize="none" keyboardType="email-address" nativeID="change-email-confirm" autoComplete="email" />
+                  <Btn label={tr('save')} onPress={handleChangeEmail} loading={loading} />
+                </View>
+              )}
+            </Card>
 
-          {msg ? <Text style={{ color: C.green, fontSize: 13, textAlign: 'center', marginTop: 8 }}>{msg}</Text> : null}
+            {/* Change Password */}
+            <Card style={cardStyle}>
+              <TouchableOpacity onPress={() => setSection(section === 'password' ? null : 'password')} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ color: C.text, fontWeight: '700', fontSize: isDesktop ? 13 : 15, flex: 1 }}>{tr('changePassword')}</Text>
+                <Text style={{ color: C.purple, fontSize: 18 }}>{section === 'password' ? '▲' : '▼'}</Text>
+              </TouchableOpacity>
+              {section === 'password' && (
+                <View style={{ marginTop: isDesktop ? 10 : 14, gap: isDesktop ? 7 : 10 }}>
+                  <TextInput style={[styles.input, inputStyle]} placeholder={tr('currentPassword')} placeholderTextColor={C.dim} value={currPass} onChangeText={setCurrPass} secureTextEntry nativeID="change-pass-current" autoComplete="current-password" />
+                  <TextInput style={[styles.input, inputStyle]} placeholder={tr('newPassword')} placeholderTextColor={C.dim} value={newPass} onChangeText={setNewPass} secureTextEntry nativeID="change-pass-new" autoComplete="new-password" />
+                  <TextInput style={[styles.input, inputStyle]} placeholder={tr('confirmPassword')} placeholderTextColor={C.dim} value={confPass} onChangeText={setConfPass} secureTextEntry nativeID="change-pass-confirm" autoComplete="new-password" />
+                  <Btn label={tr('save')} onPress={handleChangePassword} loading={loading} />
+                  <TouchableOpacity onPress={handleResetEmail} style={{ alignItems: 'center', paddingVertical: 8 }}>
+                    <Text style={{ color: C.cyan, fontSize: 13 }}>{tr('resetPasswordEmail')}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </Card>
+
+            {msg ? <Text style={{ color: C.green, fontSize: 13, textAlign: 'center', marginTop: 8 }}>{msg}</Text> : null}
+          </View>
         </ScrollView>
       </View>
     </Modal>
