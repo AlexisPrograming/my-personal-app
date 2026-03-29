@@ -1983,26 +1983,42 @@ export default function App() {
   const macros = calcMacros({ weight: profile.weight_kg, height: profile.height_cm, age: profile.age, sex: profile.sex, goal: profile.goal, activity: profile.activity });
 
   // ── Supabase auth listener ──
+  const sessionApprovedRef = useRef(false); // true once the remember-me guard has passed
+
+  const checkRememberMe = () => {
+    try {
+      const rmb   = typeof localStorage    !== 'undefined' && localStorage.getItem('ruflo_rmb');
+      const alive = typeof sessionStorage  !== 'undefined' && sessionStorage.getItem('ruflo_alive');
+      return !(rmb === '0' && !alive); // true = allowed, false = should sign out
+    } catch { return true; }
+  };
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        // If user did NOT check "Remember me", sign them out on a fresh browser session
-        try {
-          const rmb = typeof localStorage !== 'undefined' && localStorage.getItem('ruflo_rmb');
-          const alive = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('ruflo_alive');
-          if (rmb === '0' && !alive) { supabase.auth.signOut(); return; }
-        } catch {}
-        loadUserData(session.user);
-      } else { setScreen(SCREENS.WELCOME); setLoadingAuth(false); }
-    });
+    // F2: register listener BEFORE getSession so we can block it via sessionApprovedRef
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
+        sessionApprovedRef.current = false;
         setUser(null);
         setScreen(SCREENS.WELCOME);
       } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        if (session.user) loadUserData(session.user);
+        // F2: only call loadUserData if the remember-me guard already approved this session
+        if (session.user && sessionApprovedRef.current) loadUserData(session.user);
       }
     });
+
+    // F3: async callback so we can await signOut
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        if (!checkRememberMe()) {
+          // F3: awaited so token is cleared before we return
+          await supabase.auth.signOut();
+          return;
+        }
+        sessionApprovedRef.current = true;
+        loadUserData(session.user);
+      } else { setScreen(SCREENS.WELCOME); setLoadingAuth(false); }
+    });
+
     return () => subscription.unsubscribe();
   }, []);
 
@@ -2201,6 +2217,8 @@ export default function App() {
           { text: 'Sign out', style: 'destructive', onPress: () => resolve(true) },
         ]));
     if (!confirmed) return;
+    // F4: clear remember-me flags so next user starts with a clean state
+    try { localStorage.removeItem('ruflo_rmb'); sessionStorage.removeItem('ruflo_alive'); } catch {}
     await supabase.auth.signOut();
     setTodayLog({ food_log: [], water_ml: 0, id: null });
     setWorkout({ exercises: [], completed: false, id: null });
