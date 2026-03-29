@@ -36,7 +36,10 @@
       "Bash(npx supabase:*)",
       "WebFetch(domain:pulse-health-coach.vercel.app)",
       "mcp__claude_ai_Supabase__get_logs",
-      "Bash(npx npm-check-updates:*)"
+      "Bash(npx npm-check-updates:*)",
+      "Bash(find 'D:\\\\my personal app' -not -path */node_modules/* -not -path */.git/* -not -path */dist/* -type f)",
+      "mcp__claude_ai_Supabase__list_projects",
+      "mcp__claude_ai_Supabase__apply_migration"
     ]
   },
   "enableAllProjectMcpServers": true,

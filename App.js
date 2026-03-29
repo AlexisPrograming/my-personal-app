@@ -12,6 +12,8 @@ import Svg, { Circle, Line } from 'react-native-svg';
 import { supabase } from './supabaseConfig';
 import { checkRateLimit, showRateLimitAlert, LIMITS } from './src/utils/rateLimiter';
 import FoodScannerModal from './src/components/FoodScannerModal';
+import OrbitScreen from './src/components/orbit/OrbitScreen';
+import { autoBroadcastPR, getPreviousBest } from './src/utils/orbit/autoBroadcastPR';
 
 const { width: W } = Dimensions.get('window');
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -1889,11 +1891,12 @@ const NAV_TABS = [
   { id: 'TRAIN', label: 'Train',     icon: '△' },
   { id: 'HIST',  label: 'History',   icon: '▤' },
   { id: 'ME',    label: 'Me',        icon: '◉' },
+  { id: 'ORBIT', label: 'Orbit',     icon: '🌐' },
 ];
 
 function TabBar({ active, onPress, onCoach, lang }) {
   const tr = k => STRINGS[lang]?.[k] ?? STRINGS.en[k];
-  const navLabels = { TODAY: tr('navToday'), LOG: tr('navNutrition'), TRAIN: tr('navTrain'), HIST: tr('navHistory'), ME: tr('navMe') };
+  const navLabels = { TODAY: tr('navToday'), LOG: tr('navNutrition'), TRAIN: tr('navTrain'), HIST: tr('navHistory'), ME: tr('navMe'), ORBIT: 'Orbit' };
   return (
     <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.border, flexDirection: 'row', paddingBottom: Platform.OS === 'ios' ? 24 : 10, paddingTop: 10 }}>
       {NAV_TABS.map(t => (
@@ -1912,7 +1915,7 @@ function TabBar({ active, onPress, onCoach, lang }) {
 // ─── SIDEBAR (desktop) ───────────────────────────────────────────────────────
 function Sidebar({ active, onPress, onCoach, username, lang }) {
   const tr = k => STRINGS[lang]?.[k] ?? STRINGS.en[k];
-  const navLabels = { TODAY: tr('navToday'), LOG: tr('navNutrition'), TRAIN: tr('navTrain'), HIST: tr('navHistory'), ME: tr('navMe') };
+  const navLabels = { TODAY: tr('navToday'), LOG: tr('navNutrition'), TRAIN: tr('navTrain'), HIST: tr('navHistory'), ME: tr('navMe'), ORBIT: 'Orbit' };
   return (
     <View style={{ width: 240, backgroundColor: C.surface, borderRightWidth: 1, borderRightColor: C.border, paddingTop: 32, paddingBottom: 24, paddingHorizontal: 16, justifyContent: 'space-between' }}>
       <View>
@@ -2153,6 +2156,16 @@ export default function App() {
     const newW     = { ...workout, exercises: exs };
     const saved    = await saveWorkout(newW);
     setWorkout(saved || newW);
+    // Orbit PR broadcast
+    try {
+      const exercise = workout.exercises[exIndex];
+      if (exercise?.name && set.weight > 0) {
+        const existingPR = await getPreviousBest(user.id, exercise.name);
+        if (set.weight > existingPR.weight || set.reps > existingPR.reps) {
+          await autoBroadcastPR(user.id, exercise.name, set.weight, set.reps, exs[exIndex].sets.length);
+        }
+      }
+    } catch {}
   };
 
   const handleDeleteExercise = async (exIndex) => {
@@ -2268,6 +2281,7 @@ export default function App() {
             {tab === 'TRAIN' && <TrainTab today={workout} onLogSet={handleLogSet} onAddExercise={handleAddExercise} onFinishWorkout={handleFinishWorkout} onDeleteExercise={handleDeleteExercise} onDeleteSet={handleDeleteSet} onEditSet={handleEditSet} streak={streak} lang={lang} />}
             {tab === 'HIST'  && <HistoryTab logs={historyLogs} workouts={historyWorkouts} loading={loadingHistory} lang={lang} />}
             {tab === 'ME'    && <MeTab profile={profile} macros={macros} weights={weights} onAddWeight={handleAddWeight} onLogout={handleLogout} onEditProfile={() => setScreen(SCREENS.SETUP)} lang={lang} onChangeLang={handleChangeLang} user={user} />}
+            {tab === 'ORBIT' && <OrbitScreen user={user} streak={streak} todayWorkout={workout} />}
           </View>
           {!isDesktop && <TabBar active={tab} onPress={setTab} onCoach={() => setCoachVisible(true)} lang={lang} />}
           <CoachModal visible={coachVisible} onClose={() => setCoachVisible(false)} macros={macros} lang={lang} />

@@ -1,0 +1,90 @@
+import React from 'react';
+import { View, Text } from 'react-native';
+import { C } from '../../utils/theme';
+import ReactionBar from './ReactionBar';
+import CommentSection from './CommentSection';
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function PRBanner({ data }) {
+  return (
+    <View style={{ backgroundColor: 'rgba(251,191,36,0.1)', borderRadius: 10, borderWidth: 1, borderColor: C.amber, padding: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <Text style={{ fontSize: 18 }}>🏆</Text>
+        <Text style={{ color: C.amber, fontWeight: '800', fontSize: 13, letterSpacing: 0.5 }}>NEW PR</Text>
+      </View>
+      <Text style={{ color: C.text, fontWeight: '700', fontSize: 15 }}>{data?.exercise || 'Exercise'}</Text>
+      <Text style={{ color: C.amber, fontSize: 13, marginTop: 4 }}>
+        {data?.weight}kg × {data?.reps} reps
+      </Text>
+    </View>
+  );
+}
+
+const chipStyle = { backgroundColor: C.elevated, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: C.border };
+const chipText  = { color: C.muted, fontSize: 12 };
+
+function WorkoutBanner({ data, text }) {
+  return (
+    <View>
+      {text ? <Text style={{ color: C.text, fontSize: 14, marginBottom: 8 }}>{text}</Text> : null}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {data?.weight   ? <View style={chipStyle}><Text style={chipText}>{data.weight}kg</Text></View> : null}
+        {data?.reps     ? <View style={chipStyle}><Text style={chipText}>{data.reps} reps</Text></View> : null}
+        {data?.sets     ? <View style={chipStyle}><Text style={chipText}>{data.sets} sets</Text></View> : null}
+        {data?.volume   ? <View style={chipStyle}><Text style={chipText}>{Math.round(data.volume)}kg vol</Text></View> : null}
+        {data?.duration ? <View style={chipStyle}><Text style={chipText}>{data.duration}</Text></View> : null}
+      </View>
+    </View>
+  );
+}
+
+function MacroBanner({ text }) {
+  return (
+    <View style={{ backgroundColor: 'rgba(16,185,129,0.1)', borderRadius: 10, borderWidth: 1, borderColor: C.green, padding: 10 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: text ? 6 : 0 }}>
+        <Text style={{ fontSize: 16 }}>🥗</Text>
+        <Text style={{ color: C.green, fontWeight: '700', fontSize: 13 }}>MACRO GOAL HIT</Text>
+      </View>
+      {text ? <Text style={{ color: C.text, fontSize: 13 }}>{text}</Text> : null}
+    </View>
+  );
+}
+
+export default function SignalCard({ signal, userId }) {
+  const { id, signal_type, text_content, workout_data, is_pr, created_at, author, reactions, user_reactions } = signal;
+  const authorName = author?.username || 'Someone';
+
+  return (
+    <View style={{ backgroundColor: C.card, borderRadius: 14, borderWidth: 1, borderColor: C.border, padding: 16, marginBottom: 12 }}>
+      {/* Header */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: C.elevated, borderWidth: 1, borderColor: C.purple, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: 16 }}>👤</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: C.text, fontWeight: '700', fontSize: 14 }}>{authorName}</Text>
+          <Text style={{ color: C.dim, fontSize: 11 }}>{timeAgo(created_at)}</Text>
+        </View>
+        {is_pr && <Text style={{ color: C.amber, fontSize: 12, fontWeight: '700' }}>PR 🏆</Text>}
+      </View>
+
+      {/* Body */}
+      {signal_type === 'pr'         && <PRBanner data={workout_data} />}
+      {signal_type === 'workout'    && <WorkoutBanner data={workout_data} text={text_content} />}
+      {signal_type === 'post'       && <Text style={{ color: C.text, fontSize: 14, lineHeight: 21 }}>{text_content}</Text>}
+      {signal_type === 'macro_goal' && <MacroBanner text={text_content} />}
+
+      <ReactionBar signalId={id} userId={userId} initialCounts={reactions || {}} initialUserReactions={user_reactions || []} />
+      <CommentSection signalId={id} userId={userId} />
+    </View>
+  );
+}

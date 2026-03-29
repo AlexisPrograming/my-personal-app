@@ -1,0 +1,20 @@
+// Shared theme constants — mirrors the C object in App.js
+export const C = {
+  bg:           '#06060F',
+  surface:      '#0D0D1F',
+  card:         '#12122A',
+  elevated:     '#1A1A35',
+  border:       'rgba(139,92,246,0.18)',
+  borderBright: 'rgba(139,92,246,0.45)',
+  purple:       '#9D6FFF',
+  purpleD:      '#7C3AED',
+  purpleGlow:   'rgba(157,111,255,0.15)',
+  cyan:         '#22D3EE',
+  green:        '#10B981',
+  amber:        '#FBBF24',
+  red:          '#F87171',
+  text:         '#F0EEFF',
+  muted:        '#9B93B8',
+  dim:          '#4B4570',
+  subtle:       '#16163A',
+};
