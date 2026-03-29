@@ -1514,35 +1514,58 @@ function CoachModal({ visible, onClose, macros, lang }) {
 function HistoryTab({ logs, workouts, loading, lang }) {
   const tr = k => STRINGS[lang]?.[k] ?? STRINGS.en[k];
   const isDesktop = useIsDesktop();
+
   const byDate = {};
-  logs.forEach(l  => { byDate[l.log_date]      = { ...(byDate[l.log_date]      || {}), log:     l }; });
-  workouts.forEach(w => { byDate[w.workout_date] = { ...(byDate[w.workout_date] || {}), workout: w }; });
-  const dates  = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
-  const byMonth = {};
-  dates.forEach(d => {
-    const m = d.slice(0, 7);
-    if (!byMonth[m]) byMonth[m] = [];
-    byMonth[m].push(d);
-  });
-  const months = Object.keys(byMonth).sort((a, b) => b.localeCompare(a));
+  logs.forEach(l     => { byDate[l.log_date]      = { ...(byDate[l.log_date]      || {}), log:     l }; });
+  workouts.forEach(w => { byDate[w.workout_date]  = { ...(byDate[w.workout_date]  || {}), workout: w }; });
 
-  if (loading) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.purple} size="large" /></View>;
+  const nowD = new Date();
+  const [viewYear,  setViewYear]  = useState(nowD.getFullYear());
+  const [viewMonth, setViewMonth] = useState(nowD.getMonth()); // 0-indexed
+  const [selected,  setSelected]  = useState(null);
 
-  if (!dates.length) return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
-      <Text style={{ color: C.muted, fontSize: 15, textAlign: 'center' }}>{tr('historyEmpty')}</Text>
-    </View>
-  );
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
+    else setViewMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    const n = new Date();
+    if (viewYear === n.getFullYear() && viewMonth === n.getMonth()) return;
+    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
+    else setViewMonth(m => m + 1);
+  };
+  const isAtCurrentMonth = viewYear === nowD.getFullYear() && viewMonth === nowD.getMonth();
 
-  // ── Water stats ──
-  const todayStr2  = todayISO();
-  const weekAgo    = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
-  const monthStart = todayStr2.slice(0, 7) + '-01';
-  const todayWater = (byDate[todayStr2]?.log?.water_ml) || 0;
-  const weekLogs   = logs.filter(l => l.log_date >= weekAgo);
+  // Build grid cells: Mon-first
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  let startDow = new Date(viewYear, viewMonth, 1).getDay();
+  startDow = (startDow + 6) % 7; // Mon = 0
+  const cells = [];
+  for (let i = 0; i < startDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const todayStr   = todayISO();
+  const monthStr   = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
+  const monthLabel = new Date(viewYear, viewMonth, 2).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
+
+  // Water stats
+  const todayWater = (byDate[todayStr]?.log?.water_ml) || 0;
+  const weekAgoD   = new Date(Date.now() - 6 * 86400000);
+  const weekAgoStr = `${weekAgoD.getFullYear()}-${String(weekAgoD.getMonth()+1).padStart(2,'0')}-${String(weekAgoD.getDate()).padStart(2,'0')}`;
+  const monthStart = todayStr.slice(0, 7) + '-01';
+  const weekLogs   = logs.filter(l => l.log_date >= weekAgoStr);
   const monthLogs  = logs.filter(l => l.log_date >= monthStart);
   const weekAvg    = weekLogs.length  ? Math.round(weekLogs.reduce( (s,l) => s + (l.water_ml||0), 0) / weekLogs.length)  : 0;
   const monthAvg   = monthLogs.length ? Math.round(monthLogs.reduce((s,l) => s + (l.water_ml||0), 0) / monthLogs.length) : 0;
+
+  const selEntry   = selected ? byDate[selected] : null;
+  const selLog     = selEntry?.log;
+  const selWorkout = selEntry?.workout;
+
+  const DOW = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+
+  if (loading) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.purple} size="large" /></View>;
 
   return (
     <ScrollView contentContainerStyle={{ padding: isDesktop ? 32 : 20, paddingBottom: isDesktop ? 40 : 100, alignItems: isDesktop ? 'center' : undefined }}>
@@ -1551,13 +1574,13 @@ function HistoryTab({ logs, workouts, loading, lang }) {
         <Text style={{ color: C.muted, fontSize: 13, marginBottom: 16 }}>Your last 30 days at a glance.</Text>
 
         {/* Hydration summary */}
-        <Card style={{ marginBottom: 20 }}>
+        <Card style={{ marginBottom: 16 }}>
           <Text style={{ color: C.cyan, fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 12 }}>💧 HYDRATION</Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             {[
-              { label: 'Today',         value: `${todayWater} ml` },
-              { label: 'Weekly avg',    value: `${weekAvg} ml` },
-              { label: 'Monthly avg',   value: `${monthAvg} ml` },
+              { label: 'Today',       value: `${todayWater} ml` },
+              { label: 'Weekly avg',  value: `${weekAvg} ml` },
+              { label: 'Monthly avg', value: `${monthAvg} ml` },
             ].map(s => (
               <View key={s.label} style={{ flex: 1, backgroundColor: C.elevated, borderRadius: 10, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: C.border }}>
                 <Text style={{ color: C.text, fontWeight: '700', fontSize: 15 }}>{s.value}</Text>
@@ -1566,47 +1589,158 @@ function HistoryTab({ logs, workouts, loading, lang }) {
             ))}
           </View>
         </Card>
-        {months.map(month => (
-          <View key={month} style={{ marginBottom: 24 }}>
-            <Text style={{ color: C.purple, fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 10 }}>
-              {new Date(month + '-02').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()}
-            </Text>
-            {byMonth[month].map(date => {
-              const entry   = byDate[date];
-              const log     = entry.log;
-              const workout = entry.workout;
-              const cal     = log ? (log.food_log || []).reduce((s, f) => s + (f.cal || 0), 0) : 0;
-              const protein = log ? (log.food_log || []).reduce((s, f) => s + (f.p   || 0), 0) : 0;
-              const water   = log ? (log.water_ml || 0) : 0;
-              const d = new Date(date + 'T12:00:00');
-              return (
-                <Card key={date} style={{ marginBottom: 8 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: C.elevated, alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
-                      <Text style={{ color: C.purple, fontWeight: '800', fontSize: 17 }}>{d.getDate()}</Text>
-                      <Text style={{ color: C.dim, fontSize: 9, letterSpacing: 0.5 }}>{d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}</Text>
+
+        {/* Calendar card */}
+        <Card>
+          {/* Month navigation */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+            <TouchableOpacity onPress={prevMonth} style={{ padding: 10 }}>
+              <Text style={{ color: C.purple, fontSize: 20, lineHeight: 22 }}>‹</Text>
+            </TouchableOpacity>
+            <Text style={{ flex: 1, textAlign: 'center', color: C.text, fontWeight: '800', fontSize: 13, letterSpacing: 1.5 }}>{monthLabel}</Text>
+            <TouchableOpacity onPress={nextMonth} style={{ padding: 10, opacity: isAtCurrentMonth ? 0.2 : 1 }} disabled={isAtCurrentMonth}>
+              <Text style={{ color: C.purple, fontSize: 20, lineHeight: 22 }}>›</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Day-of-week headers */}
+          <View style={{ flexDirection: 'row', marginBottom: 6 }}>
+            {DOW.map(d => (
+              <View key={d} style={{ flex: 1, alignItems: 'center' }}>
+                <Text style={{ color: C.dim, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>{d}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Grid rows */}
+          {Array.from({ length: cells.length / 7 }, (_, row) => (
+            <View key={row} style={{ flexDirection: 'row', marginBottom: 4 }}>
+              {cells.slice(row * 7, row * 7 + 7).map((day, col) => {
+                if (!day) return <View key={col} style={{ flex: 1, height: 44 }} />;
+                const dateStr    = `${monthStr}-${String(day).padStart(2, '0')}`;
+                const entry      = byDate[dateStr];
+                const hasFood    = !!(entry?.log?.food_log?.length);
+                const hasWorkout = !!(entry?.workout?.completed);
+                const isToday    = dateStr === todayStr;
+                const isSelected = dateStr === selected;
+
+                let bg     = 'transparent';
+                let border = 'transparent';
+                let fw     = '400';
+                let txtCol = C.dim;
+
+                if (isSelected)        { bg = C.purple;     border = C.purple;       txtCol = '#fff'; fw = '800'; }
+                else if (hasWorkout && hasFood) { bg = C.purpleGlow; border = C.purple;   txtCol = C.purple; fw = '700'; }
+                else if (hasWorkout)   { bg = 'rgba(251,191,36,0.12)'; border = C.amber;  txtCol = C.amber;  fw = '700'; }
+                else if (hasFood)      { bg = C.purpleGlow;  border = 'rgba(157,111,255,0.4)'; txtCol = C.purple; fw = '600'; }
+                if (isToday && !isSelected) { border = C.amber; }
+
+                return (
+                  <TouchableOpacity key={col} onPress={() => setSelected(isSelected ? null : dateStr)}
+                    style={{ flex: 1, alignItems: 'center', justifyContent: 'center', height: 44 }}>
+                    <View style={{
+                      width: 36, height: 36, borderRadius: 10,
+                      backgroundColor: bg,
+                      borderWidth: (isToday || hasFood || hasWorkout || isSelected) ? 1.5 : 0,
+                      borderColor: border,
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Text style={{ color: txtCol, fontWeight: fw, fontSize: 13 }}>{day}</Text>
                     </View>
-                    <View style={{ flex: 1 }}>
-                      {log
-                        ? <><Text style={{ color: C.text, fontWeight: '600', fontSize: 13 }}>{cal} kcal · {Math.round(protein)}g protein</Text>
-                            <Text style={{ color: C.muted, fontSize: 11, marginTop: 2 }}>💧 {water} ml water</Text></>
-                        : <Text style={{ color: C.dim, fontSize: 12 }}>No food logged</Text>}
-                    </View>
-                    {workout && (
-                      <View style={{ borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1,
-                        backgroundColor: workout.completed ? C.purpleGlow : C.elevated,
-                        borderColor:     workout.completed ? C.purple     : C.border }}>
-                        <Text style={{ color: workout.completed ? C.purple : C.dim, fontSize: 11, fontWeight: '700' }}>
-                          {workout.completed ? '✓ Trained' : 'Rest'}
-                        </Text>
+                    {/* Activity dots */}
+                    {!isSelected && (hasFood || hasWorkout) && (
+                      <View style={{ flexDirection: 'row', gap: 2, position: 'absolute', bottom: 3 }}>
+                        {hasFood    && <View style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: C.purple }} />}
+                        {hasWorkout && <View style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: C.amber  }} />}
                       </View>
                     )}
-                  </View>
-                </Card>
-              );
-            })}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ))}
+
+          {/* Legend */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: C.border }}>
+            {[
+              { color: C.purple,  label: 'Food logged' },
+              { color: C.amber,   label: 'Workout done' },
+              { color: C.purple,  label: 'Both',         both: true },
+              { color: C.amber,   label: 'Today',        today: true },
+            ].map(l => (
+              <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                {l.today
+                  ? <View style={{ width: 10, height: 10, borderRadius: 3, borderWidth: 1.5, borderColor: C.amber, backgroundColor: 'transparent' }} />
+                  : l.both
+                    ? <View style={{ flexDirection: 'row', gap: 2 }}>
+                        <View style={{ width: 5, height: 5, borderRadius: 2, backgroundColor: C.purple }} />
+                        <View style={{ width: 5, height: 5, borderRadius: 2, backgroundColor: C.amber  }} />
+                      </View>
+                    : <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: l.color }} />
+                }
+                <Text style={{ color: C.dim, fontSize: 10 }}>{l.label}</Text>
+              </View>
+            ))}
           </View>
-        ))}
+        </Card>
+
+        {/* Selected day detail */}
+        {selected && (
+          <Card style={{ marginTop: 14, borderColor: C.borderBright }} glow>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
+              <View style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: C.purple, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 17 }}>{new Date(selected + 'T12:00:00').getDate()}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: C.text, fontWeight: '700', fontSize: 14 }}>
+                  {new Date(selected + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 3 }}>
+                  {selWorkout?.completed && <Text style={{ color: C.amber,  fontSize: 11 }}>🏋️ Trained</Text>}
+                  {selLog?.food_log?.length > 0 && <Text style={{ color: C.purple, fontSize: 11 }}>🍽 Food logged</Text>}
+                  {!selWorkout?.completed && !selLog?.food_log?.length && <Text style={{ color: C.dim, fontSize: 11 }}>No activity recorded</Text>}
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setSelected(null)} style={{ padding: 6 }}>
+                <Text style={{ color: C.dim, fontSize: 16 }}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            {selLog ? (
+              <>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                  {[
+                    { label: 'Calories', value: `${(selLog.food_log||[]).reduce((s,f)=>s+(f.cal||0),0)}`, unit: 'kcal', color: C.purple },
+                    { label: 'Protein',  value: `${Math.round((selLog.food_log||[]).reduce((s,f)=>s+(f.p||0),0))}`,   unit: 'g',    color: C.cyan   },
+                    { label: 'Water',    value: `${selLog.water_ml||0}`, unit: 'ml',   color: C.cyan   },
+                  ].map(s => (
+                    <View key={s.label} style={{ flex: 1, backgroundColor: C.elevated, borderRadius: 10, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: C.border }}>
+                      <Text style={{ color: s.color, fontWeight: '800', fontSize: 16 }}>{s.value}</Text>
+                      <Text style={{ color: C.dim,   fontSize: 9,  marginTop: 1 }}>{s.unit}</Text>
+                      <Text style={{ color: C.muted, fontSize: 9,  marginTop: 1 }}>{s.label}</Text>
+                    </View>
+                  ))}
+                </View>
+                {(selLog.food_log||[]).length > 0 && (
+                  <View>
+                    <Text style={{ color: C.muted, fontSize: 10, letterSpacing: 1, marginBottom: 6 }}>FOOD LOG</Text>
+                    {(selLog.food_log||[]).slice(0, 6).map((f, i) => (
+                      <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: i < Math.min((selLog.food_log||[]).length, 6) - 1 ? 1 : 0, borderBottomColor: C.border }}>
+                        <Text style={{ color: C.text, fontSize: 12, flex: 1 }}>{f.name || f.id}</Text>
+                        <Text style={{ color: C.muted, fontSize: 12 }}>{f.cal} kcal</Text>
+                      </View>
+                    ))}
+                    {(selLog.food_log||[]).length > 6 && (
+                      <Text style={{ color: C.dim, fontSize: 11, marginTop: 6 }}>+{(selLog.food_log||[]).length - 6} more items</Text>
+                    )}
+                  </View>
+                )}
+              </>
+            ) : (
+              <Text style={{ color: C.dim, fontSize: 13 }}>No food logged this day.</Text>
+            )}
+          </Card>
+        )}
       </View>
     </ScrollView>
   );
