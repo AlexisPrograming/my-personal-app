@@ -1,4 +1,4 @@
-// Shared theme constants — mirrors the C object in App.js
+// Shared theme + font constants — mirrors App.js C and F objects
 export const C = {
   bg:           '#080a0e',
   surface:      '#0d1117',
@@ -17,4 +17,15 @@ export const C = {
   muted:        '#8a9ab0',
   dim:          '#5c6b80',
   subtle:       '#0d1117',
+};
+
+export const F = {
+  heading:  'BarlowCondensed_700Bold',
+  headingB: 'BarlowCondensed_900Black',
+  label:    'BarlowCondensed_600SemiBold',
+  mono:     'SpaceMono_400Regular',
+  monoB:    'SpaceMono_700Bold',
+  body:     'Barlow_400Regular',
+  bodyL:    'Barlow_300Light',
+  bodyM:    'Barlow_500Medium',
 };

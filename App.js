@@ -14,6 +14,22 @@ import { checkRateLimit, showRateLimitAlert, LIMITS } from './src/utils/rateLimi
 import FoodScannerModal from './src/components/FoodScannerModal';
 import OrbitScreen from './src/components/orbit/OrbitScreen';
 import { autoBroadcastPR, getPreviousBest } from './src/utils/orbit/autoBroadcastPR';
+import { useFonts } from 'expo-font';
+import {
+  BarlowCondensed_400Regular,
+  BarlowCondensed_600SemiBold,
+  BarlowCondensed_700Bold,
+  BarlowCondensed_900Black,
+} from '@expo-google-fonts/barlow-condensed';
+import {
+  SpaceMono_400Regular,
+  SpaceMono_700Bold,
+} from '@expo-google-fonts/space-mono';
+import {
+  Barlow_300Light,
+  Barlow_400Regular,
+  Barlow_500Medium,
+} from '@expo-google-fonts/barlow';
 
 const { width: W } = Dimensions.get('window');
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -39,6 +55,18 @@ const C = {
   muted:        '#8a9ab0',
   dim:          '#5c6b80',
   subtle:       '#0d1117',
+};
+
+// ─── FONTS ───────────────────────────────────────────────────────────────────
+const F = {
+  heading:  'BarlowCondensed_700Bold',
+  headingB: 'BarlowCondensed_900Black',
+  label:    'BarlowCondensed_600SemiBold',
+  mono:     'SpaceMono_400Regular',
+  monoB:    'SpaceMono_700Bold',
+  body:     'Barlow_400Regular',
+  bodyL:    'Barlow_300Light',
+  bodyM:    'Barlow_500Medium',
 };
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
@@ -1902,7 +1930,7 @@ function TabBar({ active, onPress, onCoach, lang }) {
       {NAV_TABS.map(t => (
         <TouchableOpacity key={t.id} onPress={() => onPress(t.id)} style={{ flex: 1, alignItems: 'center' }}>
           <Text style={{ fontSize: 18, color: active === t.id ? C.purple : C.dim }}>{t.icon}</Text>
-          <Text style={{ fontSize: 10, color: active === t.id ? C.purple : C.dim, marginTop: 3, fontWeight: active === t.id ? '700' : '400' }}>{navLabels[t.id]}</Text>
+          <Text style={{ fontSize: 10, color: active === t.id ? C.purple : C.dim, marginTop: 3, fontFamily: F.heading, letterSpacing: 1.5 }}>{navLabels[t.id]}</Text>
         </TouchableOpacity>
       ))}
       <TouchableOpacity onPress={onCoach} style={{ position: 'absolute', right: 16, top: -52, width: 48, height: 48, borderRadius: 24, backgroundColor: C.purple, alignItems: 'center', justifyContent: 'center', shadowColor: C.purple, shadowOpacity: 0.6, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 8 }}>
@@ -1925,15 +1953,15 @@ function Sidebar({ active, onPress, onCoach, username, lang }) {
             <Text style={{ fontSize: 18 }}>⚡</Text>
           </View>
           <View>
-            <Text style={{ color: C.text, fontWeight: '800', fontSize: 16, letterSpacing: -0.5 }}>PULSE</Text>
-            <Text style={{ color: C.dim, fontSize: 10, letterSpacing: 1 }}>HEALTH COACH</Text>
+            <Text style={{ color: C.text, fontFamily: F.headingB, fontSize: 18, letterSpacing: 3 }}>PULSE</Text>
+            <Text style={{ color: C.cyan, fontFamily: F.label, fontSize: 9, letterSpacing: 3 }}>HEALTH COACH</Text>
           </View>
         </View>
         {/* Nav items */}
         {NAV_TABS.map(t => (
           <TouchableOpacity key={t.id} onPress={() => onPress(t.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 12, borderRadius: 10, marginBottom: 4, backgroundColor: active === t.id ? C.elevated : 'transparent', borderWidth: active === t.id ? 1 : 0, borderColor: active === t.id ? C.border : 'transparent' }}>
             <Text style={{ fontSize: 16, color: active === t.id ? C.purple : C.dim }}>{t.icon}</Text>
-            <Text style={{ color: active === t.id ? C.text : C.muted, fontWeight: active === t.id ? '600' : '400', fontSize: 14 }}>{navLabels[t.id]}</Text>
+            <Text style={{ color: active === t.id ? C.text : C.muted, fontFamily: active === t.id ? F.heading : F.label, fontSize: 13, letterSpacing: 1 }}>{navLabels[t.id]}</Text>
             {active === t.id && <View style={{ flex: 1 }} />}
             {active === t.id && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: C.purple }} />}
           </TouchableOpacity>
@@ -1943,7 +1971,7 @@ function Sidebar({ active, onPress, onCoach, username, lang }) {
       <View style={{ gap: 10 }}>
         <TouchableOpacity onPress={onCoach} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.purple, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 }}>
           <Text style={{ fontSize: 16 }}>⚡</Text>
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>AI Coach</Text>
+          <Text style={{ color: C.bg, fontFamily: F.heading, fontSize: 14, letterSpacing: 2 }}>AI COACH</Text>
         </TouchableOpacity>
         {username ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 8, paddingVertical: 6 }}>
@@ -1962,6 +1990,18 @@ function Sidebar({ active, onPress, onCoach, username, lang }) {
 const SCREENS = { WELCOME: 'WELCOME', AUTH: 'AUTH', SETUP: 'SETUP', MAIN: 'MAIN' };
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    BarlowCondensed_400Regular,
+    BarlowCondensed_600SemiBold,
+    BarlowCondensed_700Bold,
+    BarlowCondensed_900Black,
+    SpaceMono_400Regular,
+    SpaceMono_700Bold,
+    Barlow_300Light,
+    Barlow_400Regular,
+    Barlow_500Medium,
+  });
+
   const [screen,       setScreen]       = useState(SCREENS.WELCOME);
   const [authMode,     setAuthMode]     = useState('signup');
   const [user,         setUser]         = useState(null);
@@ -2243,7 +2283,7 @@ export default function App() {
     setScreen(SCREENS.MAIN);
   };
 
-  if (loadingAuth) {
+  if (loadingAuth || !fontsLoaded) {
     return (
       <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
         <Text style={{ fontSize: 40, marginBottom: 16 }}>⚡</Text>
