@@ -130,6 +130,7 @@ const STRINGS = {
     auth_username:'Username', auth_email:'Email', auth_password:'Password',
     auth_minPassword:'Min. 12 characters', auth_back:'← Back',
     auth_createBtn:'Create Account', auth_signInBtn:'Sign In',
+    rememberMe:'Remember me for 30 days', rememberMeSub:'Stay signed in after closing the browser',
   },
   es: {
     navToday:'Hoy', navNutrition:'Nutrición', navTrain:'Entrenar', navHistory:'Historial', navMe:'Yo',
@@ -220,6 +221,7 @@ const STRINGS = {
     auth_username:'Nombre de usuario', auth_email:'Correo electrónico', auth_password:'Contraseña',
     auth_minPassword:'Mín. 12 caracteres', auth_back:'← Atrás',
     auth_createBtn:'Crear Cuenta', auth_signInBtn:'Iniciar Sesión',
+    rememberMe:'Recordarme por 30 días', rememberMeSub:'Mantener sesión al cerrar el navegador',
   },
 };
 
@@ -656,12 +658,13 @@ function WelcomeScreen({ onGetStarted, onSignIn, lang = 'en' }) {
 // ─── AUTH SCREEN ──────────────────────────────────────────────────────────────
 function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
   const tr = k => STRINGS[lang]?.[k] ?? STRINGS.en[k];
-  const [mode,     setMode]     = useState(initialMode);
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
-  const [error,    setError]    = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [mode,       setMode]       = useState(initialMode);
+  const [email,      setEmail]      = useState('');
+  const [password,   setPassword]   = useState('');
+  const [username,   setUsername]   = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
+  const [error,      setError]      = useState('');
+  const [loading,    setLoading]    = useState(false);
 
   const submit = async () => {
     setError('');
@@ -694,6 +697,12 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
       } else {
         const { error: signInErr } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (signInErr) throw signInErr;
+        // Persist "remember me" preference
+        try {
+          localStorage.setItem('ruflo_rmb', rememberMe ? '1' : '0');
+          if (rememberMe) { sessionStorage.removeItem('ruflo_alive'); }
+          else            { sessionStorage.setItem('ruflo_alive', '1'); }
+        } catch {}
       }
     } catch (e) {
       const msg = e.message || '';
@@ -734,6 +743,23 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
         <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('auth_password')}</Text>
         <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry placeholder={tr('auth_minPassword')} placeholderTextColor={C.dim} id="password" nativeID="password" autoComplete="current-password" />
       </View>
+      {mode === 'signin' && (
+        <TouchableOpacity onPress={() => setRememberMe(v => !v)}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <View style={{
+            width: 20, height: 20, borderRadius: 6, borderWidth: 1.5,
+            borderColor: rememberMe ? C.purple : C.dim,
+            backgroundColor: rememberMe ? C.purple : 'transparent',
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            {rememberMe && <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', lineHeight: 14 }}>✓</Text>}
+          </View>
+          <View>
+            <Text style={{ color: C.text, fontSize: 13, fontWeight: '600' }}>{tr('rememberMe')}</Text>
+            <Text style={{ color: C.dim, fontSize: 11, marginTop: 1 }}>{tr('rememberMeSub')}</Text>
+          </View>
+        </TouchableOpacity>
+      )}
       {error ? <Text style={{ color: C.red, fontSize: 13, marginBottom: 16, textAlign: 'center' }}>{error}</Text> : null}
       <Btn label={mode === 'signup' ? tr('auth_createBtn') : tr('auth_signInBtn')} onPress={submit} loading={loading} />
     </>
@@ -1959,8 +1985,15 @@ export default function App() {
   // ── Supabase auth listener ──
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) loadUserData(session.user);
-      else { setScreen(SCREENS.WELCOME); setLoadingAuth(false); }
+      if (session?.user) {
+        // If user did NOT check "Remember me", sign them out on a fresh browser session
+        try {
+          const rmb = typeof localStorage !== 'undefined' && localStorage.getItem('ruflo_rmb');
+          const alive = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('ruflo_alive');
+          if (rmb === '0' && !alive) { supabase.auth.signOut(); return; }
+        } catch {}
+        loadUserData(session.user);
+      } else { setScreen(SCREENS.WELCOME); setLoadingAuth(false); }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
