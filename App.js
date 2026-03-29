@@ -367,7 +367,7 @@ function getGreeting(lang) {
   return STRINGS[lang]?.[key] ?? STRINGS.en[key];
 }
 
-function todayISO() { return new Date().toISOString().slice(0, 10); }
+function todayISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function todayStr(lang)  { const locale = lang === 'es' ? 'es-ES' : 'en-US'; return new Date().toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' }); }
 function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
