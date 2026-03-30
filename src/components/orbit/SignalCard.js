@@ -111,8 +111,8 @@ export default function SignalCard({ signal, userId, onDelete }) {
         </View>
         {is_pr && <Text style={{ color: C.amber, fontSize: 12, fontWeight: '700' }}>PR 🏆</Text>}
         {onDelete && (
-          <TouchableOpacity onPress={confirmDelete} style={{ paddingHorizontal: 6, paddingVertical: 4 }}>
-            <Text style={{ fontSize: 15 }}>🗑</Text>
+          <TouchableOpacity onPress={confirmDelete} style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: C.elevated, borderWidth: 1, borderColor: C.border }}>
+            <Text style={{ fontSize: 12, color: C.muted }}>🗑︎</Text>
           </TouchableOpacity>
         )}
       </View>
