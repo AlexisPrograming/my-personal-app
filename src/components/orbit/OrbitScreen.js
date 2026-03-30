@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Platform } from 'react-native';
 import { supabase } from '../../../supabaseConfig';
 import { C, F } from '../../utils/theme';
 import PulseIdCard from './PulseIdCard';
@@ -161,7 +161,18 @@ export default function OrbitScreen({ user, streak, todayWorkout }) {
   };
 
   const handleDeleteSignal = async (signalId) => {
-    await supabase.from('signals').delete().eq('id', signalId).eq('author_id', user.id);
+    const { error } = await supabase
+      .from('signals')
+      .delete()
+      .eq('id', signalId)
+      .eq('author_id', user.id);
+    if (error) {
+      console.error('Delete signal error:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Could not delete signal. Check Supabase RLS permissions.');
+      }
+      return;
+    }
     setSignals(prev => prev.filter(s => s.id !== signalId));
   };
 
