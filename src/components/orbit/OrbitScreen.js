@@ -160,6 +160,11 @@ export default function OrbitScreen({ user, streak, todayWorkout }) {
     await loadSignals();
   };
 
+  const handleDeleteSignal = async (signalId) => {
+    await supabase.from('signals').delete().eq('id', signalId).eq('author_id', user.id);
+    setSignals(prev => prev.filter(s => s.id !== signalId));
+  };
+
   const handleMarkRead = async (ids) => {
     if (!ids?.length) return;
     await supabase.from('orbit_notifications').update({ read: true }).in('id', ids);
@@ -213,7 +218,7 @@ export default function OrbitScreen({ user, streak, todayWorkout }) {
           ? <View style={{ paddingVertical: 40, alignItems: 'center' }}><ActivityIndicator color={C.purple} /></View>
           : <>
               {activeTab === 'ORBIT'   && <OrbitTab user={user} streak={streak} weeklyCount={weeklyCount} friends={friends} onAddFriend={handleAddFriend} />}
-              {activeTab === 'SIGNAL'  && <SignalTab signals={signals} userId={user?.id} onCreateSignal={handleCreateSignal} todayWorkout={todayWorkout} />}
+              {activeTab === 'SIGNAL'  && <SignalTab signals={signals} userId={user?.id} onCreateSignal={handleCreateSignal} onDeleteSignal={handleDeleteSignal} todayWorkout={todayWorkout} />}
               {activeTab === 'BATTLES' && <BattlesTab battles={battles} userId={user?.id} />}
               {activeTab === 'ALERTS'  && <AlertsTab notifications={notifications} onMarkRead={handleMarkRead} />}
             </>
@@ -319,7 +324,7 @@ function OrbitTab({ user, streak, weeklyCount, friends, onAddFriend }) {
   );
 }
 
-function SignalTab({ signals, userId, onCreateSignal, todayWorkout }) {
+function SignalTab({ signals, userId, onCreateSignal, onDeleteSignal, todayWorkout }) {
   return (
     <>
       <CreateSignalBox onSubmit={onCreateSignal} todayWorkout={todayWorkout} />
@@ -331,7 +336,7 @@ function SignalTab({ signals, userId, onCreateSignal, todayWorkout }) {
           </Text>
         </View>
       ) : (
-        signals.map(s => <SignalCard key={s.id} signal={s} userId={userId} />)
+        signals.map(s => <SignalCard key={s.id} signal={s} userId={userId} onDelete={s.author_id === userId ? () => onDeleteSignal(s.id) : null} />)
       )}
     </>
   );

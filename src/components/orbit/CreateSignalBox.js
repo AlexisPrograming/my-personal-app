@@ -47,11 +47,11 @@ export default function CreateSignalBox({ onSubmit, todayWorkout }) {
       workout_data = { km: Number(runKm) || 0, min: Number(runMin) || 0, is_record: false };
     } else if (attachedWorkout) {
       signal_type = 'workout';
-      const totalSets = attachedWorkout.exercises.reduce((s, e) => s + (e.sets?.length || 0), 0);
-      const totalVol  = attachedWorkout.exercises.reduce(
-        (s, e) => s + (e.sets || []).reduce((ss, set) => ss + (set.weight || 0) * (set.reps || 0), 0), 0
-      );
-      workout_data = { sets: totalSets, volume: totalVol };
+      const strengthExs = attachedWorkout.exercises.filter(e => !['cv1','cv2','cv3','cv4'].includes(e?.id));
+      const totalSets = strengthExs.reduce((s, e) => s + (e.sets?.length || 0), 0);
+      const totalReps = strengthExs.reduce((s, e) => s + (e.sets || []).reduce((ss, set) => ss + (set.reps || 0), 0), 0);
+      const maxWeight = strengthExs.reduce((m, e) => Math.max(m, ...(e.sets || []).map(set => set.weight || 0)), 0);
+      workout_data = { sets: totalSets, reps: totalReps, weight: maxWeight || undefined };
     }
 
     await onSubmit({ signal_type, text_content: text.trim(), workout_data, is_pr: isPR });

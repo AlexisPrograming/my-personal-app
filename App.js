@@ -1369,11 +1369,13 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+      {!today.completed && (
       <TouchableOpacity onPress={() => setShowExercises(v => !v)} style={{ backgroundColor: C.elevated, borderRadius: 12, padding: isDesktop ? 14 : 10, marginBottom: isDesktop ? 12 : 8, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.borderBright }}>
         <Text style={{ color: C.purple, fontSize: isDesktop ? 20 : 16, marginRight: 8 }}>+</Text>
         <Text style={{ color: C.text, fontWeight: '600', fontSize: isDesktop ? 15 : 13 }}>{tr('addExerciseFrom')} {tr('cat_' + activeCategory.toLowerCase())}</Text>
       </TouchableOpacity>
-      {showExercises && (
+      )}
+      {!today.completed && showExercises && (
         <Card style={{ marginBottom: 16 }}>
           {EXERCISES[activeCategory].map(ex => (
             <TouchableOpacity key={ex.id} onPress={() => { onAddExercise(ex); setShowExercises(false); }} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border }}>
@@ -1393,9 +1395,11 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
             <View style={{ backgroundColor: C.elevated, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, marginRight: 8, borderWidth: 1, borderColor: C.border }}>
               <Text style={{ color: C.cyan, fontSize: 11, fontWeight: '700' }}>{ex.sets.length} sets</Text>
             </View>
+            {!today.completed && (
             <TouchableOpacity onPress={() => onDeleteExercise(ei)} style={{ paddingHorizontal: 8, paddingVertical: 2 }}>
               <Text style={{ color: C.red, fontSize: 16 }}>✕</Text>
             </TouchableOpacity>
+            )}
           </View>
           {ex.sets.map((set, si) => (
             editingSet && editingSet.exIndex === ei && editingSet.setIndex === si ? (
@@ -1437,6 +1441,7 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
                 <Text style={{ color: C.text, fontSize: isDesktop ? 13 : 12, flex: 1 }}>
                   {isCardio(ex) ? fmtCardioSet(set, ex) : (set.weight > 0 ? `${set.weight}kg` : '—') + `  ×  ${set.reps} reps`}
                 </Text>
+                {!today.completed && <>
                 <TouchableOpacity onPress={() => {
                   setEditingSet({ exIndex: ei, setIndex: si });
                   if (isCardio(ex)) {
@@ -1450,9 +1455,11 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
                 <TouchableOpacity onPress={() => onDeleteSet(ei, si)} style={{ paddingHorizontal: 6 }}>
                   <Text style={{ color: C.red, fontSize: 13 }}>✕</Text>
                 </TouchableOpacity>
+                </>}
               </View>
             )
           ))}
+          {!today.completed && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: isDesktop ? 8 : 6 }}>
             {isCardio(ex) ? <>
               <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder={isDistCardio(ex) ? 'km' : 'min'} placeholderTextColor={C.dim} keyboardType="decimal-pad" value={isDistCardio(ex) ? (setInputs[ex.id]?.km||'') : (setInputs[ex.id]?.min||'')} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], ...(isDistCardio(ex) ? { km: v } : { min: v }) } }))} />
@@ -1478,6 +1485,7 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
               <Text style={{ color: '#fff', fontWeight: '700', fontSize: isDesktop ? 14 : 13 }}>{tr('logBtn')}</Text>
             </TouchableOpacity>
           </View>
+          )}
         </Card>
       ))}
       {today.exercises.length > 0 && (

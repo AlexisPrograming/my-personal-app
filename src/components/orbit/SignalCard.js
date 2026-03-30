@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { C } from '../../utils/theme';
 import ReactionBar from './ReactionBar';
 import CommentSection from './CommentSection';
@@ -37,10 +37,10 @@ function WorkoutBanner({ data, text }) {
     <View>
       {text ? <Text style={{ color: C.text, fontSize: 14, marginBottom: 8 }}>{text}</Text> : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {data?.weight   ? <View style={chipStyle}><Text style={chipText}>{data.weight}kg</Text></View> : null}
-        {data?.reps     ? <View style={chipStyle}><Text style={chipText}>{data.reps} reps</Text></View> : null}
         {data?.sets     ? <View style={chipStyle}><Text style={chipText}>{data.sets} sets</Text></View> : null}
-        {data?.volume   ? <View style={chipStyle}><Text style={chipText}>{Math.round(data.volume)}kg vol</Text></View> : null}
+        {data?.reps     ? <View style={chipStyle}><Text style={chipText}>{data.reps} reps</Text></View> : null}
+        {data?.weight   ? <View style={chipStyle}><Text style={[chipText, { color: C.amber }]}>{data.weight}kg</Text></View> : null}
+        {!data?.weight && data?.volume ? <View style={chipStyle}><Text style={[chipText, { color: C.amber }]}>{Math.round(data.volume)}kg vol</Text></View> : null}
         {data?.duration ? <View style={chipStyle}><Text style={chipText}>{data.duration}</Text></View> : null}
       </View>
     </View>
@@ -82,9 +82,16 @@ function MacroBanner({ text }) {
   );
 }
 
-export default function SignalCard({ signal, userId }) {
+export default function SignalCard({ signal, userId, onDelete }) {
   const { id, signal_type, text_content, workout_data, is_pr, created_at, author, reactions, user_reactions } = signal;
   const authorName = author?.username || 'Someone';
+
+  const confirmDelete = () => {
+    Alert.alert('Delete signal', 'Remove this signal?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: onDelete },
+    ]);
+  };
 
   return (
     <View style={{ backgroundColor: C.card, borderRadius: 14, borderWidth: 1, borderColor: C.border, padding: 16, marginBottom: 12 }}>
@@ -98,6 +105,11 @@ export default function SignalCard({ signal, userId }) {
           <Text style={{ color: C.dim, fontSize: 11 }}>{timeAgo(created_at)}</Text>
         </View>
         {is_pr && <Text style={{ color: C.amber, fontSize: 12, fontWeight: '700' }}>PR 🏆</Text>}
+        {onDelete && (
+          <TouchableOpacity onPress={confirmDelete} style={{ paddingHorizontal: 6, paddingVertical: 4 }}>
+            <Text style={{ fontSize: 15 }}>🗑</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Body */}
