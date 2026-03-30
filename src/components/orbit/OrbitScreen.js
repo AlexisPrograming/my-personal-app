@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { supabase } from '../../../supabaseConfig';
-import { C } from '../../utils/theme';
+import { C, F } from '../../utils/theme';
 import PulseIdCard from './PulseIdCard';
 import OrbitRing from './OrbitRing';
 import FriendCard from './FriendCard';
@@ -220,15 +220,82 @@ export default function OrbitScreen({ user, streak, todayWorkout }) {
 }
 
 function OrbitTab({ user, streak, weeklyCount, friends, onAddFriend }) {
+  // Build Mon–Sun dot states based on today and weeklyCount
+  const todayJS  = new Date().getDay();               // 0=Sun … 6=Sat
+  const todayIdx = todayJS === 0 ? 6 : todayJS - 1;  // remap to 0=Mon … 6=Sun
+  const dotStates = [0,1,2,3,4,5,6].map(i => {
+    if (i === todayIdx) return 'today';
+    if (i < todayIdx && (todayIdx - i) <= weeklyCount) return 'done';
+    return 'empty';
+  });
+
   return (
     <>
-      <View style={{ flexDirection: 'row', gap: 14, marginBottom: 16, alignItems: 'center' }}>
+      {/* Orbit Ring row */}
+      <View style={{ flexDirection: 'row', gap: 14, marginBottom: 0, alignItems: 'center' }}>
         <OrbitRing completed={weeklyCount} total={7} size={84} />
         <View style={{ flex: 1 }}>
-          <Text style={{ color: C.text, fontWeight: '700', fontSize: 16 }}>{weeklyCount}/7 days this week</Text>
-          <Text style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>🔥 {streak} day streak</Text>
+          <Text style={{ color: C.text, fontFamily: F.headingB, fontSize: 18, letterSpacing: 0.5 }}>
+            {weeklyCount}/7 days this week
+          </Text>
         </View>
       </View>
+
+      {/* ── STREAK BAR ── */}
+      <View style={{
+        marginTop: 16,
+        marginBottom: 16,
+        backgroundColor: C.card,
+        borderWidth: 1,
+        borderColor: C.border,
+        borderRadius: 10,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+      }}>
+        {/* Fire */}
+        <Text style={{ fontSize: 28 }}>🔥</Text>
+
+        {/* Middle — week dots */}
+        <View style={{ flex: 1 }}>
+          <Text style={{
+            fontFamily: F.heading,
+            fontSize: 11,
+            letterSpacing: 2,
+            color: C.muted,
+            textTransform: 'uppercase',
+            marginBottom: 4,
+          }}>THIS WEEK</Text>
+          <View style={{ flexDirection: 'row', gap: 5, marginTop: 2 }}>
+            {dotStates.map((state, i) => (
+              <View key={i} style={{
+                width: 10, height: 10, borderRadius: 5,
+                backgroundColor: state === 'done'  ? C.red
+                               : state === 'today' ? C.amber
+                               : C.surface,
+                borderWidth: 1,
+                borderColor:    state === 'done'  ? C.red
+                              : state === 'today' ? C.amber
+                              : C.border,
+              }} />
+            ))}
+          </View>
+          <Text style={{ fontSize: 11, color: C.dim, marginTop: 4 }}>
+            Mon–Sun · {weeklyCount} day{weeklyCount !== 1 ? 's' : ''} active
+          </Text>
+        </View>
+
+        {/* Right — big streak number */}
+        <View style={{ alignItems: 'center' }}>
+          <Text style={{ fontFamily: F.headingB, fontSize: 28, color: C.red, lineHeight: 30 }}>
+            {streak}
+          </Text>
+          <Text style={{ fontSize: 11, color: C.dim }}>day streak</Text>
+        </View>
+      </View>
+
       <PulseIdCard userId={user?.id} />
       <AddFriendBox onAdd={onAddFriend} />
       <Text style={{ color: C.muted, fontSize: 11, letterSpacing: 1, marginBottom: 10 }}>
