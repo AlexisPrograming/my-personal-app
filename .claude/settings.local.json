@@ -40,7 +40,8 @@
       "Bash(find 'D:\\\\my personal app' -not -path */node_modules/* -not -path */.git/* -not -path */dist/* -type f)",
       "mcp__claude_ai_Supabase__list_projects",
       "mcp__claude_ai_Supabase__apply_migration",
-      "Bash(grep -rn \"cardio\\\\|running\\\\|reps\\\\|kg\\\\|kilometers\\\\|distance\\\\|duration\\\\|exercise_type\\\\|workout_type\" 'D:/my personal app/src' --include=*.js -l)"
+      "Bash(grep -rn \"cardio\\\\|running\\\\|reps\\\\|kg\\\\|kilometers\\\\|distance\\\\|duration\\\\|exercise_type\\\\|workout_type\" 'D:/my personal app/src' --include=*.js -l)",
+      "Bash(xargs wc:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
