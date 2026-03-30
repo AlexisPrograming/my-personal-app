@@ -58,8 +58,12 @@ export default function OrbitScreen({ user, streak, todayWorkout }) {
       setFriends([]);
     }
 
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 7);
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Sun,1=Mon,...,6=Sat
+    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const cutoff = new Date(now);
+    cutoff.setDate(now.getDate() - daysFromMonday);
+    cutoff.setHours(0, 0, 0, 0);
     const { data: weekWorkouts } = await supabase
       .from('workouts')
       .select('id')
