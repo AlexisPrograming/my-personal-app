@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, Platform } from 'react-native';
 import { C } from '../../utils/theme';
 import ReactionBar from './ReactionBar';
 import CommentSection from './CommentSection';
@@ -87,10 +87,15 @@ export default function SignalCard({ signal, userId, onDelete }) {
   const authorName = author?.username || 'Someone';
 
   const confirmDelete = () => {
-    Alert.alert('Delete signal', 'Remove this signal?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: onDelete },
-    ]);
+    if (Platform.OS === 'web') {
+      // eslint-disable-next-line no-alert
+      if (window.confirm('Delete this signal?')) onDelete();
+    } else {
+      Alert.alert('Delete signal', 'Remove this signal?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: onDelete },
+      ]);
+    }
   };
 
   return (
