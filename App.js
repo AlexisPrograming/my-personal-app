@@ -80,7 +80,7 @@ const STRINGS = {
     carbs:'Carbs (g)', fats:'Fats (g)', save:'Save', cancel:'Cancel',
     training:'Training', addExerciseFrom:'Add exercise from', logBtn:'Log',
     finishWorkout:'Finish Workout', workoutDone:'✓ Done — Tap to undo',
-    exercises:'Exercises', totalSets:'Total sets', volumeKg:'Volume kg',
+    exercises:'Exercises', totalSets:'Total sets', volumeKg:'Volume kg', totalKm:'Km run',
     weightHistory:'WEIGHT HISTORY', macroPlan:'MACRO PLAN', editProfile:'Edit Profile',
     signOut:'Sign Out', settings:'Settings', logWeight:'Log', weightPlaceholder:"Today's weight (kg)",
     settingsTitle:'Settings', language:'Language', english:'English', spanish:'Spanish',
@@ -171,7 +171,7 @@ const STRINGS = {
     carbs:'Carbohidratos (g)', fats:'Grasas (g)', save:'Guardar', cancel:'Cancelar',
     training:'Entrenamiento', addExerciseFrom:'Agregar ejercicio de', logBtn:'Registrar',
     finishWorkout:'Terminar Entrenamiento', workoutDone:'✓ Listo — Toca para deshacer',
-    exercises:'Ejercicios', totalSets:'Series totales', volumeKg:'Volumen kg',
+    exercises:'Ejercicios', totalSets:'Series totales', volumeKg:'Volumen kg', totalKm:'Km corridos',
     weightHistory:'HISTORIAL DE PESO', macroPlan:'PLAN DE MACROS', editProfile:'Editar Perfil',
     signOut:'Cerrar Sesión', settings:'Ajustes', logWeight:'Registrar', weightPlaceholder:'Peso de hoy (kg)',
     settingsTitle:'Ajustes', language:'Idioma', english:'Inglés', spanish:'Español',
@@ -1313,8 +1313,9 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
   const categories = Object.keys(EXERCISES);
   const days       = ['M','T','W','T','F','S','S'];
   const dayOfWeek  = new Date().getDay();
-  const totalSets  = today.exercises.reduce((s, e) => s + e.sets.length, 0);
-  const totalVol   = today.exercises.reduce((s, e) => s + e.sets.reduce((ss, set) => ss + (set.weight||0)*(set.reps||0), 0), 0);
+  const totalSets  = today.exercises.reduce((s, e) => isCardio(e) ? s : s + e.sets.length, 0);
+  const totalVol   = today.exercises.reduce((s, e) => isCardio(e) ? s : s + e.sets.reduce((ss, set) => ss + (set.weight||0)*(set.reps||0), 0), 0);
+  const totalKm    = today.exercises.reduce((s, e) => isDistCardio(e) ? s + e.sets.reduce((ss, set) => ss + (set.km||0), 0) : s, 0);
   const isDesktop  = useIsDesktop();
   return (
     <ScrollView contentContainerStyle={{ padding: isDesktop ? 32 : 12, paddingBottom: isDesktop ? 40 : 90, alignItems: isDesktop ? 'center' : undefined }}>
@@ -1328,7 +1329,7 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
         })}
       </View>
       <View style={{ flexDirection: 'row', gap: isDesktop ? 12 : 8, marginBottom: isDesktop ? 16 : 8 }}>
-        {[{ label: tr('exercises'), value: today.exercises.length, color: C.purple }, { label: tr('totalSets'), value: totalSets, color: C.cyan }, { label: tr('volumeKg'), value: totalVol, color: C.amber }].map(s => (
+        {[{ label: tr('exercises'), value: today.exercises.length, color: C.purple }, { label: tr('totalSets'), value: totalSets, color: C.cyan }, { label: tr('volumeKg'), value: totalVol, color: C.amber }, ...(totalKm > 0 ? [{ label: tr('totalKm'), value: totalKm % 1 === 0 ? totalKm : totalKm.toFixed(1), color: C.cyan }] : [])].map(s => (
           <Card key={s.label} style={{ flex: 1, marginBottom: 0, padding: isDesktop ? 12 : 6, alignItems: 'center' }}>
             <Text style={{ color: s.color, fontWeight: '800', fontSize: isDesktop ? 22 : 15 }}>{s.value}</Text>
             <Text style={{ color: C.muted, fontSize: isDesktop ? 10 : 9, marginTop: 1 }}>{s.label}</Text>
