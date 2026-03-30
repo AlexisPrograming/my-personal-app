@@ -18,8 +18,11 @@ export default function CreateSignalBox({ onSubmit, todayWorkout }) {
   const [loading,         setLoading]         = useState(false);
   const [attachedWorkout, setAttachedWorkout] = useState(null);
   const [isPR,            setIsPR]            = useState(false);
+  const [isRun,           setIsRun]           = useState(false);
+  const [runKm,           setRunKm]           = useState('');
+  const [runMin,          setRunMin]          = useState('');
 
-  const hasContent = text.trim() || attachedWorkout || isPR;
+  const hasContent = text.trim() || attachedWorkout || isPR || (isRun && (runKm || runMin));
 
   const handleAttachWorkout = () => {
     if (attachedWorkout) {
@@ -39,6 +42,9 @@ export default function CreateSignalBox({ onSubmit, todayWorkout }) {
 
     if (isPR) {
       signal_type = 'pr';
+    } else if (isRun) {
+      signal_type  = 'run';
+      workout_data = { km: Number(runKm) || 0, min: Number(runMin) || 0, is_record: false };
     } else if (attachedWorkout) {
       signal_type = 'workout';
       const totalSets = attachedWorkout.exercises.reduce((s, e) => s + (e.sets?.length || 0), 0);
@@ -52,6 +58,9 @@ export default function CreateSignalBox({ onSubmit, todayWorkout }) {
     setText('');
     setAttachedWorkout(null);
     setIsPR(false);
+    setIsRun(false);
+    setRunKm('');
+    setRunMin('');
     setLoading(false);
   };
 
@@ -65,6 +74,26 @@ export default function CreateSignalBox({ onSubmit, todayWorkout }) {
         onChangeText={setText}
         multiline
       />
+      {isRun && (
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+          <TextInput
+            style={[inputStyle, { flex: 1 }]}
+            placeholder="km"
+            placeholderTextColor={C.dim}
+            value={runKm}
+            onChangeText={setRunKm}
+            keyboardType="decimal-pad"
+          />
+          <TextInput
+            style={[inputStyle, { flex: 1 }]}
+            placeholder="min"
+            placeholderTextColor={C.dim}
+            value={runMin}
+            onChangeText={setRunMin}
+            keyboardType="decimal-pad"
+          />
+        </View>
+      )}
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <TouchableOpacity
           onPress={handleAttachWorkout}
@@ -75,11 +104,19 @@ export default function CreateSignalBox({ onSubmit, todayWorkout }) {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => { setIsPR(p => !p); setAttachedWorkout(null); }}
+          onPress={() => { setIsPR(p => !p); setAttachedWorkout(null); setIsRun(false); }}
           style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: isPR ? 'rgba(251,191,36,0.15)' : C.elevated, borderWidth: 1, borderColor: isPR ? C.amber : C.border }}
         >
           <Text style={{ color: isPR ? C.amber : C.muted, fontSize: 12 }}>
             {isPR ? '✓ PR 🏆' : '+ PR 🏆'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => { setIsRun(r => !r); setIsPR(false); setAttachedWorkout(null); }}
+          style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: isRun ? 'rgba(0,229,255,0.1)' : C.elevated, borderWidth: 1, borderColor: isRun ? C.cyan : C.border }}
+        >
+          <Text style={{ color: isRun ? C.cyan : C.muted, fontSize: 12 }}>
+            {isRun ? '✓ Run 🏃' : '+ Run 🏃'}
           </Text>
         </TouchableOpacity>
         <View style={{ flex: 1 }} />

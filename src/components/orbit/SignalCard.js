@@ -47,6 +47,29 @@ function WorkoutBanner({ data, text }) {
   );
 }
 
+function RunBanner({ data, text }) {
+  const km   = data?.km   ?? 0;
+  const min  = data?.min  ?? 0;
+  const pace = km > 0 && min > 0 ? (min / km).toFixed(1) : null;
+  const isRecord = data?.is_record;
+  return (
+    <View style={{ backgroundColor: 'rgba(0,229,255,0.07)', borderRadius: 10, borderWidth: 1, borderColor: C.cyan, padding: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <Text style={{ fontSize: 18 }}>🏃</Text>
+        <Text style={{ color: C.cyan, fontWeight: '800', fontSize: 13, letterSpacing: 0.5 }}>
+          {isRecord ? 'NEW RUN RECORD 🎉' : 'RUN'}
+        </Text>
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: text ? 8 : 0 }}>
+        {km  > 0 && <View style={chipStyle}><Text style={[chipText, { color: C.cyan }]}>{km} km</Text></View>}
+        {min > 0 && <View style={chipStyle}><Text style={[chipText, { color: C.text }]}>{min} min</Text></View>}
+        {pace    && <View style={chipStyle}><Text style={[chipText, { color: C.muted }]}>{pace} min/km</Text></View>}
+      </View>
+      {text ? <Text style={{ color: C.text, fontSize: 13, lineHeight: 19 }}>{text}</Text> : null}
+    </View>
+  );
+}
+
 function MacroBanner({ text }) {
   return (
     <View style={{ backgroundColor: 'rgba(16,185,129,0.1)', borderRadius: 10, borderWidth: 1, borderColor: C.green, padding: 10 }}>
@@ -80,6 +103,7 @@ export default function SignalCard({ signal, userId }) {
       {/* Body */}
       {signal_type === 'pr'         && <PRBanner data={workout_data} />}
       {signal_type === 'workout'    && <WorkoutBanner data={workout_data} text={text_content} />}
+      {signal_type === 'run'        && <RunBanner data={workout_data} text={text_content} />}
       {signal_type === 'post'       && <Text style={{ color: C.text, fontSize: 14, lineHeight: 21 }}>{text_content}</Text>}
       {signal_type === 'macro_goal' && <MacroBanner text={text_content} />}
 

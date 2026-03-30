@@ -357,6 +357,25 @@ const EXERCISES = {
   ],
 };
 
+// ─── CARDIO HELPERS ─────────────────────────────────────────────────────────
+const CARDIO_IDS  = new Set(['cv1','cv2','cv3','cv4']);
+const CARDIO_DIST = new Set(['cv1','cv2']); // Running, Cycling — use km + min
+
+function isCardio(ex)     { return CARDIO_IDS.has(ex?.id);  }
+function isDistCardio(ex) { return CARDIO_DIST.has(ex?.id); }
+
+function fmtCardioSet(set, ex) {
+  if (isDistCardio(ex)) {
+    const km  = set.km  ?? 0;
+    const min = set.min ?? 0;
+    const pace = km > 0 && min > 0 ? ` · ${(min / km).toFixed(1)} min/km` : '';
+    return `${km} km  ·  ${min} min${pace}`;
+  }
+  const min    = set.min    ?? 0;
+  const rounds = set.rounds ?? 0;
+  return rounds > 0 ? `${min} min  ·  ${rounds} rounds` : `${min} min`;
+}
+
 const QUOTES = [
   "The body achieves what the mind believes.",
   "Progress, not perfection.",
@@ -1289,7 +1308,7 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
   const [showExercises,  setShowExercises]  = useState(false);
   const [setInputs,      setSetInputs]      = useState({});
   const [editingSet,     setEditingSet]     = useState(null); // { exIndex, setIndex }
-  const [editInputs,     setEditInputs]     = useState({ weight: '', reps: '' });
+  const [editInputs,     setEditInputs]     = useState({ weight: '', reps: '', km: '', min: '', rounds: '' });
   const [showHelp,       setShowHelp]       = useState(false);
   const categories = Object.keys(EXERCISES);
   const days       = ['M','T','W','T','F','S','S'];
@@ -1383,9 +1402,26 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
                 <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: C.amber, alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>{si + 1}</Text>
                 </View>
-                <TextInput style={[styles.input, { width: isDesktop ? undefined : 58, flex: isDesktop ? 1 : undefined, paddingVertical: 6, fontSize: 12, textAlign: 'center' }]} placeholder="kg" placeholderTextColor={C.dim} keyboardType="number-pad" value={editInputs.weight} onChangeText={v => setEditInputs(p => ({ ...p, weight: v }))} />
-                <TextInput style={[styles.input, { width: isDesktop ? undefined : 58, flex: isDesktop ? 1 : undefined, paddingVertical: 6, fontSize: 12, textAlign: 'center' }]} placeholder="reps" placeholderTextColor={C.dim} keyboardType="number-pad" value={editInputs.reps} onChangeText={v => setEditInputs(p => ({ ...p, reps: v }))} />
-                <TouchableOpacity onPress={() => { const w = Math.min(1000, Math.max(0, Number(editInputs.weight)||0)); const r = Math.min(9999, Math.max(0, Math.round(Number(editInputs.reps)||0))); onEditSet(ei, si, { weight: w, reps: r }); setEditingSet(null); }} style={{ backgroundColor: C.green, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 6 }}>
+                {isCardio(ex) ? <>
+                  <TextInput style={[styles.input, { width: isDesktop ? undefined : 58, flex: isDesktop ? 1 : undefined, paddingVertical: 6, fontSize: 12, textAlign: 'center' }]} placeholder={isDistCardio(ex) ? 'km' : 'min'} placeholderTextColor={C.dim} keyboardType="decimal-pad" value={isDistCardio(ex) ? editInputs.km : editInputs.min} onChangeText={v => setEditInputs(p => isDistCardio(ex) ? ({ ...p, km: v }) : ({ ...p, min: v }))} />
+                  <TextInput style={[styles.input, { width: isDesktop ? undefined : 58, flex: isDesktop ? 1 : undefined, paddingVertical: 6, fontSize: 12, textAlign: 'center' }]} placeholder={isDistCardio(ex) ? 'min' : 'rounds'} placeholderTextColor={C.dim} keyboardType="decimal-pad" value={isDistCardio(ex) ? editInputs.min : editInputs.rounds} onChangeText={v => setEditInputs(p => isDistCardio(ex) ? ({ ...p, min: v }) : ({ ...p, rounds: v }))} />
+                </> : <>
+                  <TextInput style={[styles.input, { width: isDesktop ? undefined : 58, flex: isDesktop ? 1 : undefined, paddingVertical: 6, fontSize: 12, textAlign: 'center' }]} placeholder="kg" placeholderTextColor={C.dim} keyboardType="number-pad" value={editInputs.weight} onChangeText={v => setEditInputs(p => ({ ...p, weight: v }))} />
+                  <TextInput style={[styles.input, { width: isDesktop ? undefined : 58, flex: isDesktop ? 1 : undefined, paddingVertical: 6, fontSize: 12, textAlign: 'center' }]} placeholder="reps" placeholderTextColor={C.dim} keyboardType="number-pad" value={editInputs.reps} onChangeText={v => setEditInputs(p => ({ ...p, reps: v }))} />
+                </>}
+                <TouchableOpacity onPress={() => {
+                  if (isCardio(ex)) {
+                    const km     = Number(editInputs.km)     || 0;
+                    const min    = Number(editInputs.min)    || 0;
+                    const rounds = Number(editInputs.rounds) || 0;
+                    onEditSet(ei, si, isDistCardio(ex) ? { km, min } : { min, rounds });
+                  } else {
+                    const w = Math.min(1000, Math.max(0, Number(editInputs.weight)||0));
+                    const r = Math.min(9999, Math.max(0, Math.round(Number(editInputs.reps)||0)));
+                    onEditSet(ei, si, { weight: w, reps: r });
+                  }
+                  setEditingSet(null);
+                }} style={{ backgroundColor: C.green, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 6 }}>
                   <Text style={{ color: '#fff', fontWeight: '700', fontSize: 11 }}>✓</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setEditingSet(null)} style={{ backgroundColor: C.elevated, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 6, borderWidth: 1, borderColor: C.border }}>
@@ -1397,8 +1433,17 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
                 <View style={{ width: isDesktop ? 24 : 20, height: isDesktop ? 24 : 20, borderRadius: 6, backgroundColor: C.purple, alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{si + 1}</Text>
                 </View>
-                <Text style={{ color: C.text, fontSize: isDesktop ? 13 : 12, flex: 1 }}>{set.weight > 0 ? `${set.weight}kg` : '—'}  ×  {set.reps} reps</Text>
-                <TouchableOpacity onPress={() => { setEditingSet({ exIndex: ei, setIndex: si }); setEditInputs({ weight: String(set.weight || ''), reps: String(set.reps || '') }); }} style={{ paddingHorizontal: 6 }}>
+                <Text style={{ color: C.text, fontSize: isDesktop ? 13 : 12, flex: 1 }}>
+                  {isCardio(ex) ? fmtCardioSet(set, ex) : (set.weight > 0 ? `${set.weight}kg` : '—') + `  ×  ${set.reps} reps`}
+                </Text>
+                <TouchableOpacity onPress={() => {
+                  setEditingSet({ exIndex: ei, setIndex: si });
+                  if (isCardio(ex)) {
+                    setEditInputs({ weight: '', reps: '', km: String(set.km ?? ''), min: String(set.min ?? ''), rounds: String(set.rounds ?? '') });
+                  } else {
+                    setEditInputs({ weight: String(set.weight || ''), reps: String(set.reps || ''), km: '', min: '', rounds: '' });
+                  }
+                }} style={{ paddingHorizontal: 6 }}>
                   <Text style={{ color: C.amber, fontSize: 13 }}>✏</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => onDeleteSet(ei, si)} style={{ paddingHorizontal: 6 }}>
@@ -1408,9 +1453,27 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
             )
           ))}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: isDesktop ? 8 : 6 }}>
-            <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder="kg" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.weight||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], weight: v } }))} />
-            <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder="reps" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.reps||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], reps: v } }))} />
-            <TouchableOpacity onPress={() => { const inp = setInputs[ex.id]||{}; const w = Math.min(1000, Math.max(0, Number(inp.weight)||0)); const r = Math.min(9999, Math.max(0, Math.round(Number(inp.reps)||0))); onLogSet(ei, { weight: w, reps: r }); setSetInputs(p => ({ ...p, [ex.id]: {} })); }} style={{ flex: isDesktop ? undefined : 1, backgroundColor: C.purple, borderRadius: 8, paddingHorizontal: isDesktop ? 14 : 12, paddingVertical: isDesktop ? 9 : 7, alignItems: 'center' }}>
+            {isCardio(ex) ? <>
+              <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder={isDistCardio(ex) ? 'km' : 'min'} placeholderTextColor={C.dim} keyboardType="decimal-pad" value={isDistCardio(ex) ? (setInputs[ex.id]?.km||'') : (setInputs[ex.id]?.min||'')} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], ...(isDistCardio(ex) ? { km: v } : { min: v }) } }))} />
+              <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder={isDistCardio(ex) ? 'min' : 'rounds'} placeholderTextColor={C.dim} keyboardType="decimal-pad" value={isDistCardio(ex) ? (setInputs[ex.id]?.min||'') : (setInputs[ex.id]?.rounds||'')} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], ...(isDistCardio(ex) ? { min: v } : { rounds: v }) } }))} />
+            </> : <>
+              <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder="kg" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.weight||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], weight: v } }))} />
+              <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder="reps" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.reps||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], reps: v } }))} />
+            </>}
+            <TouchableOpacity onPress={() => {
+              const inp = setInputs[ex.id] || {};
+              if (isCardio(ex)) {
+                const km     = Number(inp.km)     || 0;
+                const min    = Number(inp.min)    || 0;
+                const rounds = Number(inp.rounds) || 0;
+                onLogSet(ei, isDistCardio(ex) ? { km, min } : { min, rounds });
+              } else {
+                const w = Math.min(1000, Math.max(0, Number(inp.weight)||0));
+                const r = Math.min(9999, Math.max(0, Math.round(Number(inp.reps)||0)));
+                onLogSet(ei, { weight: w, reps: r });
+              }
+              setSetInputs(p => ({ ...p, [ex.id]: {} }));
+            }} style={{ flex: isDesktop ? undefined : 1, backgroundColor: C.purple, borderRadius: 8, paddingHorizontal: isDesktop ? 14 : 12, paddingVertical: isDesktop ? 9 : 7, alignItems: 'center' }}>
               <Text style={{ color: '#fff', fontWeight: '700', fontSize: isDesktop ? 14 : 13 }}>{tr('logBtn')}</Text>
             </TouchableOpacity>
           </View>
