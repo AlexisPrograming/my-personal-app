@@ -755,8 +755,17 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
       }
     } catch (e) {
       const msg = e.message || '';
-      if (msg.toLowerCase().includes('password') && msg.toLowerCase().includes('breach')) {
+      const lower = msg.toLowerCase();
+      if (lower.includes('password') && lower.includes('breach')) {
         setError('This password has been found in a known data breach. Please choose a different password.');
+      } else if (lower.includes('email') && (lower.includes('rate') || lower.includes('limit') || lower.includes('sending') || lower.includes('exceeded'))) {
+        setError(lang === 'es'
+          ? 'Demasiados registros recientes. Intenta de nuevo en unos minutos.'
+          : 'Too many signups right now. Please try again in a few minutes.');
+      } else if (lower.includes('already registered') || lower.includes('already been registered')) {
+        setError(lang === 'es'
+          ? 'Este correo ya está registrado. Intenta iniciar sesión.'
+          : 'This email is already registered. Try signing in instead.');
       } else {
         setError(msg || 'Something went wrong.');
       }
