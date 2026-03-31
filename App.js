@@ -800,20 +800,26 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
     } catch (e) {
       const msg = e.message || '';
       const lower = msg.toLowerCase();
+      console.warn('[Auth] error:', msg); // Log real error for debugging
       if (lower.includes('password') && lower.includes('breach')) {
         setError(lang === 'es'
           ? 'Esta contraseña se encontró en una filtración de datos. Elige otra.'
           : 'This password has been found in a known data breach. Please choose a different password.');
-      } else if (lower.includes('email') && (lower.includes('rate') || lower.includes('limit') || lower.includes('sending') || lower.includes('exceeded'))) {
-        setError(lang === 'es'
-          ? 'Demasiados registros recientes. Intenta de nuevo en unos minutos.'
-          : 'Too many signups right now. Please try again in a few minutes.');
       } else if (lower.includes('invalid login') || lower.includes('invalid credentials') || lower.includes('invalid email or password')) {
         setError(lang === 'es'
           ? 'Correo o contraseña incorrectos.'
           : 'Incorrect email or password.');
       } else if (lower.includes('already') || lower.includes('registered') || lower.includes('exists')) {
         setError(tr('auth_emailInUse'));
+      } else if (lower.includes('rate') && lower.includes('limit')) {
+        setError(lang === 'es'
+          ? 'Demasiados intentos. Espera un momento e intenta de nuevo.'
+          : 'Too many attempts. Wait a moment and try again.');
+      } else if (lower.includes('sending') || lower.includes('email')) {
+        // SMTP / email delivery issue — let user know but don't block
+        setError(lang === 'es'
+          ? 'Error enviando correo de confirmación. Tu cuenta fue creada — intenta iniciar sesión.'
+          : 'Error sending confirmation email. Your account was created — try signing in.');
       } else {
         setError(msg || 'Something went wrong.');
       }
