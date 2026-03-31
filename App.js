@@ -725,7 +725,15 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
   const submit = async () => {
     setError('');
     const rl = checkRateLimit('auth:submit', LIMITS.authSubmit.maxCalls, LIMITS.authSubmit.windowMs);
-    if (!rl.allowed) { setError(`Too many attempts. Please wait ${rl.retryAfterMs}s and try again.`); return; }
+    if (!rl.allowed) {
+      const mins = Math.ceil(rl.retryAfterMs / 60);
+      const secs = rl.retryAfterMs % 60;
+      const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+      setError(lang === 'es'
+        ? `Demasiados intentos. Espera ${timeStr} e intenta de nuevo.`
+        : `Too many attempts. Please wait ${timeStr} and try again.`);
+      return;
+    }
 
     if (mode === 'signup') {
       // Signup: require email, username, password
@@ -749,16 +757,24 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
           options: { data: { username: username.trim() } },
         });
         if (signUpErr) {
-          // Supabase returns a fake user with no session when email is already taken
-          // (to prevent email enumeration), so we check explicitly
           const errMsg = signUpErr.message?.toLowerCase() || '';
-          if (errMsg.includes('already') || errMsg.includes('registered') || errMsg.includes('exists')) {
+          // Check for existing email — multiple possible error formats from Supabase
+          if (errMsg.includes('already') || errMsg.includes('registered') || errMsg.includes('exists')
+              || errMsg.includes('user already') || errMsg.includes('duplicate')) {
             setError(tr('auth_emailInUse'));
+            return;
+          }
+          // Email sending error during signup = account likely exists or SMTP issue
+          if (errMsg.includes('sending') || errMsg.includes('smtp') || errMsg.includes('email')) {
+            // Check if it's actually a duplicate by looking at identities
+            setError(lang === 'es'
+              ? 'Error al enviar el correo. Si ya tienes cuenta, intenta iniciar sesión.'
+              : 'Error sending email. If you already have an account, try signing in.');
             return;
           }
           throw signUpErr;
         }
-        // Supabase may return user with identities=[] for existing email (no error thrown)
+        // Supabase returns user with identities=[] for existing email (no error thrown)
         if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
           setError(tr('auth_emailInUse'));
           return;

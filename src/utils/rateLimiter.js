@@ -46,8 +46,8 @@ export function showRateLimitAlert(retryAfterSecs, action = 'this action') {
 
 // Pre-configured rate limit profiles used across the app.
 export const LIMITS = {
-  // Auth: max 5 attempts per 60 s
-  authSubmit:   { maxCalls: 5,  windowMs: 60_000 },
+  // Auth: max 10 attempts per 2 min
+  authSubmit:   { maxCalls: 10, windowMs: 120_000 },
   // Profile setup save: max 3 saves per 30 s
   profileSave:  { maxCalls: 3,  windowMs: 30_000 },
   // Weight log: max 5 entries per 60 s
