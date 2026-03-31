@@ -158,8 +158,10 @@ const STRINGS = {
     auth_startTransform:'Start your transformation today.', auth_continueJourney:'Continue your journey.',
     auth_signUp:'Sign Up', auth_signIn:'Sign In',
     auth_username:'Username', auth_email:'Email', auth_password:'Password',
-    auth_minPassword:'Min. 12 characters', auth_back:'← Back',
+    auth_emailOrUser:'Email or Username', auth_minPassword:'Min. 12 characters', auth_back:'← Back',
     auth_createBtn:'Create Account', auth_signInBtn:'Sign In',
+    auth_emailInUse:'This email is already in use. Try signing in instead.',
+    auth_userNotFound:'No account found with that username.',
     rememberMe:'Remember me for 30 days', rememberMeSub:'Stay signed in after closing the browser',
   },
   es: {
@@ -249,8 +251,10 @@ const STRINGS = {
     auth_startTransform:'Comienza tu transformación hoy.', auth_continueJourney:'Continúa tu camino.',
     auth_signUp:'Registrarse', auth_signIn:'Iniciar Sesión',
     auth_username:'Nombre de usuario', auth_email:'Correo electrónico', auth_password:'Contraseña',
-    auth_minPassword:'Mín. 12 caracteres', auth_back:'← Atrás',
+    auth_emailOrUser:'Correo o nombre de usuario', auth_minPassword:'Mín. 12 caracteres', auth_back:'← Atrás',
     auth_createBtn:'Crear Cuenta', auth_signInBtn:'Iniciar Sesión',
+    auth_emailInUse:'Este correo ya está en uso. Intenta iniciar sesión.',
+    auth_userNotFound:'No se encontró una cuenta con ese nombre de usuario.',
     rememberMe:'Recordarme por 30 días', rememberMeSub:'Mantener sesión al cerrar el navegador',
   },
 };
@@ -715,15 +719,27 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
   const [error,      setError]      = useState('');
   const [loading,    setLoading]    = useState(false);
 
+  // Check if input looks like an email
+  const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
   const submit = async () => {
     setError('');
     const rl = checkRateLimit('auth:submit', LIMITS.authSubmit.maxCalls, LIMITS.authSubmit.windowMs);
     if (!rl.allowed) { setError(`Too many attempts. Please wait ${rl.retryAfterMs}s and try again.`); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('Enter a valid email.'); return; }
-    if (password.length < 12)           { setError('Password needs at least 12 characters.'); return; }
-    if (mode === 'signup' && username.length < 3) { setError('Username needs at least 3 characters.'); return; }
-    if (mode === 'signup' && username.length > 30) { setError('Username must be 30 characters or less.'); return; }
-    if (mode === 'signup' && !/^[a-zA-Z0-9_]+$/.test(username.trim())) { setError('Username can only contain letters, numbers, and underscores.'); return; }
+
+    if (mode === 'signup') {
+      // Signup: require email, username, password
+      if (!isEmail(email)) { setError(lang === 'es' ? 'Ingresa un correo válido.' : 'Enter a valid email.'); return; }
+      if (password.length < 12)           { setError(lang === 'es' ? 'La contraseña necesita al menos 12 caracteres.' : 'Password needs at least 12 characters.'); return; }
+      if (username.length < 3) { setError(lang === 'es' ? 'El nombre de usuario necesita al menos 3 caracteres.' : 'Username needs at least 3 characters.'); return; }
+      if (username.length > 30) { setError(lang === 'es' ? 'El nombre de usuario debe tener 30 caracteres o menos.' : 'Username must be 30 characters or less.'); return; }
+      if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) { setError(lang === 'es' ? 'Solo letras, números y guiones bajos.' : 'Username can only contain letters, numbers, and underscores.'); return; }
+    } else {
+      // Signin: require email OR username + password
+      if (!email.trim()) { setError(lang === 'es' ? 'Ingresa tu correo o nombre de usuario.' : 'Enter your email or username.'); return; }
+      if (password.length < 12) { setError(lang === 'es' ? 'La contraseña necesita al menos 12 caracteres.' : 'Password needs at least 12 characters.'); return; }
+    }
+
     setLoading(true);
     try {
       if (mode === 'signup') {
@@ -732,19 +748,47 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
           password,
           options: { data: { username: username.trim() } },
         });
-        if (signUpErr) throw signUpErr;
+        if (signUpErr) {
+          // Supabase returns a fake user with no session when email is already taken
+          // (to prevent email enumeration), so we check explicitly
+          const errMsg = signUpErr.message?.toLowerCase() || '';
+          if (errMsg.includes('already') || errMsg.includes('registered') || errMsg.includes('exists')) {
+            setError(tr('auth_emailInUse'));
+            return;
+          }
+          throw signUpErr;
+        }
+        // Supabase may return user with identities=[] for existing email (no error thrown)
+        if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
+          setError(tr('auth_emailInUse'));
+          return;
+        }
         if (data.user && !data.session) {
-          setError('Check your email and confirm your account before signing in.');
+          setError(lang === 'es'
+            ? 'Revisa tu correo y confirma tu cuenta antes de iniciar sesión.'
+            : 'Check your email and confirm your account before signing in.');
           return;
         }
         if (data.user && data.session) {
           const { error: profileErr } = await supabase.from('profiles').upsert({
-            id: data.user.id, username: username.trim(), profile_complete: false,
+            id: data.user.id, username: username.trim(), email: email.trim().toLowerCase(), profile_complete: false,
           }, { onConflict: 'id' });
           if (profileErr && profileErr.code !== '23505') throw profileErr;
         }
       } else {
-        const { error: signInErr } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        // Signin: resolve username to email if needed
+        let loginEmail = email.trim();
+        if (!isEmail(loginEmail)) {
+          // Input is a username — look up the email via secure RPC function
+          const { data: foundEmail, error: lookupErr } = await supabase
+            .rpc('get_email_by_username', { lookup_username: loginEmail });
+          if (lookupErr || !foundEmail) {
+            setError(tr('auth_userNotFound'));
+            return;
+          }
+          loginEmail = foundEmail;
+        }
+        const { error: signInErr } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
         if (signInErr) throw signInErr;
         // Persist "remember me" preference
         try {
@@ -757,15 +801,19 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
       const msg = e.message || '';
       const lower = msg.toLowerCase();
       if (lower.includes('password') && lower.includes('breach')) {
-        setError('This password has been found in a known data breach. Please choose a different password.');
+        setError(lang === 'es'
+          ? 'Esta contraseña se encontró en una filtración de datos. Elige otra.'
+          : 'This password has been found in a known data breach. Please choose a different password.');
       } else if (lower.includes('email') && (lower.includes('rate') || lower.includes('limit') || lower.includes('sending') || lower.includes('exceeded'))) {
         setError(lang === 'es'
           ? 'Demasiados registros recientes. Intenta de nuevo en unos minutos.'
           : 'Too many signups right now. Please try again in a few minutes.');
-      } else if (lower.includes('already registered') || lower.includes('already been registered')) {
+      } else if (lower.includes('invalid login') || lower.includes('invalid credentials') || lower.includes('invalid email or password')) {
         setError(lang === 'es'
-          ? 'Este correo ya está registrado. Intenta iniciar sesión.'
-          : 'This email is already registered. Try signing in instead.');
+          ? 'Correo o contraseña incorrectos.'
+          : 'Incorrect email or password.');
+      } else if (lower.includes('already') || lower.includes('registered') || lower.includes('exists')) {
+        setError(tr('auth_emailInUse'));
       } else {
         setError(msg || 'Something went wrong.');
       }
@@ -794,8 +842,8 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
         </View>
       )}
       <View style={{ marginBottom: 14 }}>
-        <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('auth_email')}</Text>
-        <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" placeholderTextColor={C.dim} id="email" nativeID="email" autoComplete="email" />
+        <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{mode === 'signup' ? tr('auth_email') : tr('auth_emailOrUser')}</Text>
+        <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType={mode === 'signup' ? 'email-address' : 'default'} autoCapitalize="none" placeholder={mode === 'signup' ? 'you@example.com' : (lang === 'es' ? 'correo o usuario' : 'email or username')} placeholderTextColor={C.dim} id="email" nativeID="email" autoComplete={mode === 'signup' ? 'email' : 'username'} />
       </View>
       <View style={{ marginBottom: 24 }}>
         <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('auth_password')}</Text>
