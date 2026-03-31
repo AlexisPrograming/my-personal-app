@@ -163,7 +163,7 @@ const STRINGS = {
     auth_emailInUse:'This email is already in use. Please sign in instead.',
     auth_userNotFound:'No account found with that username.',
     auth_usernameTaken:'That username is already taken. Choose a different one.',
-    auth_emailSendError:'Error sending confirmation email. Please try again later.',
+    auth_emailSendError:'Error sending confirmation email.',
     rememberMe:'Remember me for 30 days', rememberMeSub:'Stay signed in after closing the browser',
   },
   es: {
