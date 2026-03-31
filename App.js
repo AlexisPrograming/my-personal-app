@@ -2258,6 +2258,7 @@ export default function App() {
       if (workoutRes.data) setWorkout({ ...workoutRes.data, exercises: workoutRes.data.exercises || [] });
       if (streakRes.data)  setStreak(streakRes.data.current_streak || 0);
       if (weightsRes.data) setWeights(weightsRes.data);
+      setTab('TODAY');
       setScreen(profileRes.data?.profile_complete ? SCREENS.MAIN : SCREENS.SETUP);
     } catch {
       setScreen(SCREENS.SETUP);
