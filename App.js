@@ -160,8 +160,10 @@ const STRINGS = {
     auth_username:'Username', auth_email:'Email', auth_password:'Password',
     auth_emailOrUser:'Email or Username', auth_minPassword:'Min. 12 characters', auth_back:'← Back',
     auth_createBtn:'Create Account', auth_signInBtn:'Sign In',
-    auth_emailInUse:'This email is already in use. Try signing in instead.',
+    auth_emailInUse:'This email is already in use. Please sign in instead.',
     auth_userNotFound:'No account found with that username.',
+    auth_usernameTaken:'That username is already taken. Choose a different one.',
+    auth_emailSendError:'Error sending confirmation email. Please try again later.',
     rememberMe:'Remember me for 30 days', rememberMeSub:'Stay signed in after closing the browser',
   },
   es: {
@@ -253,8 +255,10 @@ const STRINGS = {
     auth_username:'Nombre de usuario', auth_email:'Correo electrónico', auth_password:'Contraseña',
     auth_emailOrUser:'Correo o nombre de usuario', auth_minPassword:'Mín. 12 caracteres', auth_back:'← Atrás',
     auth_createBtn:'Crear Cuenta', auth_signInBtn:'Iniciar Sesión',
-    auth_emailInUse:'Este correo ya está en uso. Intenta iniciar sesión.',
+    auth_emailInUse:'Este correo ya está en uso. Por favor, inicia sesión.',
     auth_userNotFound:'No se encontró una cuenta con ese nombre de usuario.',
+    auth_usernameTaken:'Ese nombre de usuario ya existe. Elige otro.',
+    auth_emailSendError:'Error al enviar el correo de confirmación. Intenta más tarde.',
     rememberMe:'Recordarme por 30 días', rememberMeSub:'Mantener sesión al cerrar el navegador',
   },
 };
@@ -751,30 +755,41 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
     setLoading(true);
     try {
       if (mode === 'signup') {
+        // 1. Check if username is already taken
+        const { data: usernameAvailable, error: usernameCheckErr } = await supabase
+          .rpc('check_username_available', { check_username: username.trim() });
+        if (usernameCheckErr) console.warn('[Auth] username check error:', usernameCheckErr.message);
+        if (usernameAvailable === false) {
+          setError(tr('auth_usernameTaken'));
+          return;
+        }
+
+        // 2. Create account
         const { data, error: signUpErr } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: { data: { username: username.trim() } },
         });
+
+        // 3. Handle errors
         if (signUpErr) {
           const errMsg = signUpErr.message?.toLowerCase() || '';
-          // Check for existing email — multiple possible error formats from Supabase
+          console.warn('[Auth] signUp error:', errMsg);
+          // Existing email
           if (errMsg.includes('already') || errMsg.includes('registered') || errMsg.includes('exists')
               || errMsg.includes('user already') || errMsg.includes('duplicate')) {
             setError(tr('auth_emailInUse'));
             return;
           }
-          // Email sending error during signup = account likely exists or SMTP issue
-          if (errMsg.includes('sending') || errMsg.includes('smtp') || errMsg.includes('email')) {
-            // Check if it's actually a duplicate by looking at identities
-            setError(lang === 'es'
-              ? 'Error al enviar el correo. Si ya tienes cuenta, intenta iniciar sesión.'
-              : 'Error sending email. If you already have an account, try signing in.');
+          // SMTP / email sending error
+          if (errMsg.includes('sending') || errMsg.includes('smtp') || errMsg.includes('mail')) {
+            setError(tr('auth_emailSendError'));
             return;
           }
           throw signUpErr;
         }
-        // Supabase returns user with identities=[] for existing email (no error thrown)
+
+        // 4. Supabase returns user with identities=[] for existing email (no error thrown)
         if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
           setError(tr('auth_emailInUse'));
           return;
