@@ -2172,8 +2172,12 @@ export default function App() {
         sessionApprovedRef.current = false;
         setUser(null);
         setScreen(SCREENS.WELCOME);
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        // F2: only call loadUserData if the remember-me guard already approved this session
+      } else if (event === 'SIGNED_IN') {
+        // Fresh sign-in: always approve and load user data immediately
+        sessionApprovedRef.current = true;
+        if (session.user) loadUserData(session.user);
+      } else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        // Token refresh / update: only proceed if session was already approved
         if (session.user && sessionApprovedRef.current) loadUserData(session.user);
       }
     });
