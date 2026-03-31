@@ -1,0 +1,9 @@
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.validate.enable": true,
+  "files.exclude": {
+    "supabase/functions/**/*.ts": false
+  },
+  "deno.enablePaths": ["supabase/functions"],
+  "deno.enable": false
+}
