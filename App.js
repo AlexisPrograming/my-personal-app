@@ -258,7 +258,7 @@ const STRINGS = {
     auth_emailInUse:'Este correo ya está en uso. Por favor, inicia sesión.',
     auth_userNotFound:'No se encontró una cuenta con ese nombre de usuario.',
     auth_usernameTaken:'Ese nombre de usuario ya existe. Elige otro.',
-    auth_emailSendError:'Error al enviar el correo de confirmación. Intenta más tarde.',
+    auth_emailSendError:'Error al enviar el correo de confirmación.',
     rememberMe:'Recordarme por 30 días', rememberMeSub:'Mantener sesión al cerrar el navegador',
   },
 };
