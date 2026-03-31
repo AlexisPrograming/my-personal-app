@@ -728,15 +728,18 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
 
   const submit = async () => {
     setError('');
-    const rl = checkRateLimit('auth:submit', LIMITS.authSubmit.maxCalls, LIMITS.authSubmit.windowMs);
-    if (!rl.allowed) {
-      const mins = Math.ceil(rl.retryAfterMs / 60);
-      const secs = rl.retryAfterMs % 60;
-      const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-      setError(lang === 'es'
-        ? `Demasiados intentos. Espera ${timeStr} e intenta de nuevo.`
-        : `Too many attempts. Please wait ${timeStr} and try again.`);
-      return;
+    // Rate limit only on signup, not signin
+    if (mode === 'signup') {
+      const rl = checkRateLimit('auth:submit', LIMITS.authSubmit.maxCalls, LIMITS.authSubmit.windowMs);
+      if (!rl.allowed) {
+        const mins = Math.ceil(rl.retryAfterMs / 60);
+        const secs = rl.retryAfterMs % 60;
+        const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+        setError(lang === 'es'
+          ? `Demasiados intentos. Espera ${timeStr} e intenta de nuevo.`
+          : `Too many attempts. Please wait ${timeStr} and try again.`);
+        return;
+      }
     }
 
     if (mode === 'signup') {
