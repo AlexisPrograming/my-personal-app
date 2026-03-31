@@ -156,11 +156,13 @@ serve(async (req) => {
             },
             {
               type: 'text',
-              text: `Analiza esta imagen de comida e identifica TODOS los alimentos visibles. Responde ÚNICAMENTE con un objeto JSON sin markdown ni explicación. Estructura:
+              text: `Analiza esta imagen de comida. Tu tarea es SEGMENTAR todos los componentes/ingredientes visibles individualmente.
+
+Responde ÚNICAMENTE con un objeto JSON sin markdown ni explicación. Estructura:
 {
   "foods": [
     {
-      "name": "nombre del alimento en español",
+      "name": "nombre del ingrediente/componente en español",
       "confidence": "high|medium|low",
       "per100g": {
         "calories": número,
@@ -169,13 +171,20 @@ serve(async (req) => {
         "fat": número,
         "fiber": número
       },
-      "note": "nota breve en español, máx 10 palabras"
+      "note": "nota breve, máx 10 palabras",
+      "container": "cup|bowl|plate|glass|bottle|can|null"
     }
   ]
 }
-Si solo hay un alimento, incluye un único elemento en el array.
-Usa valores nutricionales promedio realistas por cada 100g.
-Si no puedes identificar un alimento con certeza, pon confidence "low".`,
+
+REGLAS IMPORTANTES:
+1. SEGMENTA cada ingrediente por separado (ej: café + leche + hielo, NO "café con leche")
+2. Detecta el tipo de contenedor si es visible (taza, vaso, plato, bowl, etc.)
+3. Si ves salsas, aderezos o extras, inclúyelos como ingredientes separados
+4. Hielo tiene 0 calorías pero inclúyelo para que el usuario vea el volumen
+5. Usa valores nutricionales promedio realistas por cada 100g
+6. Si no puedes identificar algo con certeza, pon confidence "low"
+7. Máximo 10 ingredientes por imagen`,
             },
           ],
         }],
@@ -230,8 +239,10 @@ Si no puedes identificar un alimento con certeza, pon confidence "low".`,
       );
     }
 
+    const validContainers = ['cup', 'bowl', 'plate', 'glass', 'bottle', 'can'];
     const sanitizeFood = (item: Record<string, unknown>) => {
       const p = (item.per100g as Record<string, unknown>) ?? {};
+      const rawContainer = String(item.container ?? '').toLowerCase();
       return {
         name:       String(item.name ?? 'Alimento desconocido').slice(0, 100),
         confidence: ['high', 'medium', 'low'].includes(String(item.confidence))
@@ -245,6 +256,7 @@ Si no puedes identificar un alimento con certeza, pon confidence "low".`,
           fiber:    clamp(p.fiber,    0, 100),
         },
         note: String(item.note ?? '').slice(0, 120),
+        container: validContainers.includes(rawContainer) ? rawContainer : null,
       };
     };
 

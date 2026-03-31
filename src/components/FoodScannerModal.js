@@ -12,7 +12,7 @@
  *   lang         {string}          — 'en' | 'es'
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   Modal, View, Text, TouchableOpacity, TextInput,
   ScrollView, ActivityIndicator, Image, Alert,
@@ -21,6 +21,14 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from '../../supabaseConfig';
+import { segmentFood, generatePredictions } from '../scanner/segmentFood';
+import { parseIngredients } from '../scanner/ingredientParser';
+import { estimatePortion, PORTION_SIZES } from '../scanner/portionEstimator';
+import { calculateNutrition, getMacroPercentages } from '../nutrition/calculateNutrition';
+import { recordCorrection, applyMemory, lookupCorrection } from '../ai/mealMemory';
+import IngredientEditor from './IngredientEditor';
+import NutritionPreview from './NutritionPreview';
+import PortionSelector from './PortionSelector';
 
 // ─── Theme (mirrors App.js) ───────────────────────────────────────────────────
 const C = {
@@ -132,8 +140,24 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
   const [loadingIdx,  setLoadingIdx]  = useState(0);
   const [error,       setError]       = useState('');
 
+  // ── V2: Enhanced nutrition state ──
+  const [ingredients,   setIngredients]   = useState([]);    // ParsedIngredient[]
+  const [predictions,   setPredictions]   = useState([]);    // [{ name, confidence, ingredients }]
+  const [activePredIdx, setActivePredIdx] = useState(0);     // which prediction is active
+  const [portionId,     setPortionId]     = useState('medium');
+  const [portionMl,     setPortionMl]     = useState(350);
+
   const loadingTimer = useRef(null);
   const spinAnim     = useRef(new Animated.Value(0)).current;
+
+  // ── Real-time nutrition calculation ──
+  const nutritionItems = useMemo(() =>
+    ingredients.map(ing => ({
+      ingredient: ing,
+      quantity: ing.defaultQty,
+    })),
+    [ingredients]
+  );
 
   // Rotate loading messages
   useEffect(() => {
@@ -158,6 +182,11 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
     setImageBase64(null);
     setResult(null);
     setSelections([]);
+    setIngredients([]);
+    setPredictions([]);
+    setActivePredIdx(0);
+    setPortionId('medium');
+    setPortionMl(350);
     setError('');
   }, []);
 
@@ -297,6 +326,34 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
       setResult(normalized);
       setImageBase64(base64);
       setSelections(normalized.foods.map(() => ({ amount: '100', unit: 'g', selected: true })));
+
+      // V2: Run segmentation → ingredients → portion estimation → predictions
+      const detected = segmentFood(normalized);
+      const parsed = parseIngredients(detected);
+      setIngredients(parsed);
+
+      const container = detected.find(d => d.container)?.container ?? null;
+      const portion = estimatePortion(container, parsed);
+      setPortionId(portion.portionId);
+      setPortionMl(portion.totalMl);
+
+      // Scale ingredient quantities based on portion
+      const portionData = PORTION_SIZES.find(p => p.id === portion.portionId);
+      if (portionData) {
+        setIngredients(prev => prev.map(ing => ({
+          ...ing,
+          defaultQty: ing.unit === 'ml'
+            ? Math.round(portionData.ml * (ing.defaultQty / 350))
+            : ing.defaultQty,
+        })));
+      }
+
+      // Generate meal-level predictions and apply meal memory
+      let preds = generatePredictions(detected);
+      try { preds = await applyMemory(preds); } catch { /* non-critical */ }
+      setPredictions(preds);
+      setActivePredIdx(0);
+
       setStep('result');
     } catch (e) {
       console.warn('[FoodScanner] unexpected error', e);
@@ -305,27 +362,60 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
     }
   };
 
-  // ── Add to log ──────────────────────────────────────────────────────────────
+  // ── Add to log (V2: ingredient-based) ───────────────────────────────────────
   const handleAdd = () => {
-    if (!result?.foods) return;
     const now = Date.now();
-    result.foods.forEach((food, i) => {
-      const sel = selections[i];
-      if (!sel?.selected || !(parseFloat(sel.amount) > 0)) return;
-      const macros = calcMacros(food.per100g, sel.amount, sel.unit);
-      const grams  = toGrams(sel.amount, sel.unit);
-      onAddFood({
-        id:    `scan_${now}_${i}`,
-        name:  food.name,
-        cal:   macros.cal,
-        p:     macros.p,
-        c:     macros.c,
-        f:     macros.f,
-        unit:  `${grams}g`,
-        meal,
-        logId: String(now + i),
+    const enabledIngredients = ingredients.filter(ing => ing.enabled && ing.defaultQty > 0);
+
+    if (enabledIngredients.length === 0 && result?.foods) {
+      // Fallback: use legacy per-food approach if no ingredients
+      result.foods.forEach((food, i) => {
+        const sel = selections[i];
+        if (!sel?.selected || !(parseFloat(sel.amount) > 0)) return;
+        const macros = calcMacros(food.per100g, sel.amount, sel.unit);
+        const grams  = toGrams(sel.amount, sel.unit);
+        onAddFood({
+          id:    `scan_${now}_${i}`,
+          name:  food.name,
+          cal:   macros.cal,
+          p:     macros.p,
+          c:     macros.c,
+          f:     macros.f,
+          unit:  `${grams}g`,
+          meal,
+          logId: String(now + i),
+        });
       });
-    });
+    } else {
+      // V2: Calculate from ingredients
+      const nutrition = calculateNutrition(
+        enabledIngredients.map(ing => ({ ingredient: ing, quantity: ing.defaultQty }))
+      );
+      const mealName = predictions[activePredIdx]?.name
+        ?? enabledIngredients.map(i => i.name).join(' + ');
+
+      onAddFood({
+        id:    `scan_${now}_0`,
+        name:  mealName,
+        cal:   nutrition.calories,
+        p:     nutrition.protein,
+        c:     nutrition.carbs,
+        f:     nutrition.fat,
+        unit:  `${portionMl}ml`,
+        meal,
+        logId: String(now),
+      });
+
+      // Record to meal memory if user changed the prediction
+      if (result?.foods?.[0]?.name && predictions[activePredIdx]?.name) {
+        const original = result.foods[0].name;
+        const chosen = predictions[activePredIdx].name;
+        if (original.toLowerCase() !== chosen.toLowerCase()) {
+          recordCorrection(original, chosen, { portionId }).catch(() => {});
+        }
+      }
+    }
+
     reset();
     onClose();
   };
@@ -335,6 +425,38 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
 
   const updateSelection = (i, patch) =>
     setSelections(prev => prev.map((s, idx) => idx === i ? { ...s, ...patch } : s));
+
+  // ── V2: Ingredient editor callbacks ──
+  const handleIngredientUpdate = useCallback((idx, patch) => {
+    setIngredients(prev => prev.map((ing, i) => i === idx ? { ...ing, ...patch } : ing));
+  }, []);
+
+  const handleIngredientToggle = useCallback((idx) => {
+    setIngredients(prev => prev.map((ing, i) =>
+      i === idx ? { ...ing, enabled: !ing.enabled } : ing
+    ));
+  }, []);
+
+  const handleIngredientAdd = useCallback((ingredient) => {
+    setIngredients(prev => [...prev, ingredient]);
+  }, []);
+
+  const handleIngredientRemove = useCallback((idx) => {
+    setIngredients(prev => prev.filter((_, i) => i !== idx));
+  }, []);
+
+  const handlePortionSelect = useCallback((id, ml) => {
+    setPortionId(id);
+    setPortionMl(ml);
+    // Scale liquid ingredients proportionally
+    setIngredients(prev => prev.map(ing => {
+      if (ing.unit === 'ml') {
+        const ratio = ml / portionMl;
+        return { ...ing, defaultQty: Math.round(ing.defaultQty * ratio) };
+      }
+      return ing;
+    }));
+  }, [portionMl]);
 
   const spinStyle = {
     transform: [{
@@ -397,10 +519,39 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
             </View>
           )}
 
-          {/* ── RESULT: multi-food cards ── */}
+          {/* ── RESULT: V2 Enhanced Flow ── */}
           {step === 'result' && result?.foods && (
             <View style={styles.section}>
 
+              {/* 1. TOP PREDICTIONS — switchable */}
+              {predictions.length > 1 && (
+                <View style={{ gap: 6, marginBottom: 4 }}>
+                  <Text style={styles.sectionTitle}>
+                    {lang === 'es' ? 'Predicciones' : 'Predictions'}
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                    {predictions.map((pred, idx) => (
+                      <TouchableOpacity
+                        key={idx}
+                        style={[styles.predChip, idx === activePredIdx && styles.predChipActive]}
+                        onPress={() => setActivePredIdx(idx)}
+                      >
+                        <Text style={[styles.predText, idx === activePredIdx && { color: '#fff' }]}>
+                          {pred.name}
+                        </Text>
+                        <Text style={styles.predConf}>
+                          {Math.round(pred.confidence * 100)}%
+                        </Text>
+                        {pred.corrected && (
+                          <Text style={{ color: C.green, fontSize: 9 }}>★</Text>
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* 2. DETECTED FOODS (original cards, collapsed) */}
               <Text style={styles.sectionTitle}>
                 {result.foods.length === 1
                   ? (lang === 'es' ? '1 alimento detectado' : '1 food detected')
@@ -408,114 +559,69 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
               </Text>
 
               {result.foods.map((food, i) => {
-                const sel    = selections[i] ?? { amount: '100', unit: 'g', selected: true };
-                const macros = calcMacros(food.per100g, sel.amount, sel.unit);
-                const totalCals = macros.cal;
-                const protPct = totalCals > 0 ? Math.round((macros.p * 4 / totalCals) * 100) : 0;
-                const carbPct = totalCals > 0 ? Math.round((macros.c * 4 / totalCals) * 100) : 0;
-                const fatPct  = totalCals > 0 ? Math.round((macros.f * 9 / totalCals) * 100) : 0;
+                const sel = selections[i] ?? { amount: '100', unit: 'g', selected: true };
                 return (
-                  <View key={i} style={[styles.foodCard, !sel.selected && { opacity: 0.45 }]}>
-                    {/* Checkbox + name + confidence */}
+                  <View key={i} style={[styles.foodCard, { paddingVertical: 10 }]}>
                     <TouchableOpacity onPress={() => toggleSelected(i)}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <View style={[styles.checkbox, sel.selected && styles.checkboxActive]}>
                         {sel.selected && <Text style={{ color: '#fff', fontSize: 10, lineHeight: 14 }}>✓</Text>}
                       </View>
-                      <Text style={[styles.foodName, { flex: 1 }]}>{food.name}</Text>
+                      <Text style={[styles.foodName, { fontSize: 16 }]} numberOfLines={1}>{food.name}</Text>
                       <ConfidenceBadge level={food.confidence} lang={lang} />
                     </TouchableOpacity>
-
-                    {food.note ? <Text style={styles.noteText}>{food.note}</Text> : null}
+                    {food.note ? <Text style={[styles.noteText, { marginTop: 4 }]}>{food.note}</Text> : null}
                     {food.confidence === 'low' && (
-                      <View style={styles.warnBox}>
+                      <View style={[styles.warnBox, { marginTop: 6 }]}>
                         <Text style={{ color: C.amber, fontSize: 12 }}>⚠️ {tr.lowWarn}</Text>
                       </View>
-                    )}
-
-                    {sel.selected && (
-                      <>
-                        <Text style={[styles.label, { marginTop: 8 }]}>{tr.amountLabel}</Text>
-                        <View style={styles.amountRow}>
-                          <TextInput
-                            style={styles.amountInput}
-                            value={sel.amount}
-                            onChangeText={v => updateSelection(i, { amount: v.replace(/[^0-9.]/g, '') })}
-                            keyboardType="decimal-pad"
-                            selectTextOnFocus
-                          />
-                          <View style={styles.unitRow}>
-                            {tr.units.map(u => (
-                              <TouchableOpacity key={u} onPress={() => updateSelection(i, { unit: u })}
-                                style={[styles.unitBtn, sel.unit === u && styles.unitBtnActive]}>
-                                <Text style={[styles.unitBtnText, sel.unit === u && { color: '#fff' }]}>{u}</Text>
-                              </TouchableOpacity>
-                            ))}
-                          </View>
-                        </View>
-                        <View style={styles.quickRow}>
-                          {[50, 100, 150, 200].map(q => (
-                            <TouchableOpacity key={q}
-                              onPress={() => updateSelection(i, { amount: String(q), unit: 'g' })}
-                              style={[styles.quickBtn, sel.amount === String(q) && sel.unit === 'g' && styles.quickBtnActive]}>
-                              <Text style={[styles.quickBtnText, sel.amount === String(q) && sel.unit === 'g' && { color: C.purple }]}>{q}g</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                        <View style={[styles.macroCard, { marginTop: 8 }]}>
-                          <View style={styles.macroRow}>
-                            <Text style={styles.macroLabel}>{tr.macros.cal}</Text>
-                            <Text style={[styles.macroValue, { color: C.amber }]}>{macros.cal} kcal</Text>
-                          </View>
-                          {[
-                            { key: 'p', color: C.cyan,  label: tr.macros.p },
-                            { key: 'c', color: C.green, label: tr.macros.c },
-                            { key: 'f', color: C.amber, label: tr.macros.f },
-                            { key: 'fiber', color: C.muted, label: tr.macros.fiber },
-                          ].map(({ key, color, label }) => (
-                            <View key={key} style={styles.macroRow}>
-                              <Text style={styles.macroLabel}>{label}</Text>
-                              <Text style={[styles.macroValue, { color }]}>{macros[key]}g</Text>
-                            </View>
-                          ))}
-                          {totalCals > 0 && (
-                            <View style={{ marginTop: 8 }}>
-                              <View style={styles.macroBar}>
-                                <View style={[styles.macroBarSeg, { flex: protPct, backgroundColor: C.cyan }]} />
-                                <View style={[styles.macroBarSeg, { flex: carbPct, backgroundColor: C.green }]} />
-                                <View style={[styles.macroBarSeg, { flex: fatPct,  backgroundColor: C.amber }]} />
-                              </View>
-                              <View style={styles.macroBarLegend}>
-                                <Text style={[styles.legendText, { color: C.cyan  }]}>P {protPct}%</Text>
-                                <Text style={[styles.legendText, { color: C.green }]}>C {carbPct}%</Text>
-                                <Text style={[styles.legendText, { color: C.amber }]}>F {fatPct}%</Text>
-                              </View>
-                            </View>
-                          )}
-                        </View>
-                      </>
                     )}
                   </View>
                 );
               })}
 
-              {/* CTA */}
+              {/* 3. INGREDIENT EDITOR */}
+              {ingredients.length > 0 && (
+                <IngredientEditor
+                  ingredients={ingredients}
+                  onUpdate={handleIngredientUpdate}
+                  onToggle={handleIngredientToggle}
+                  onAdd={handleIngredientAdd}
+                  onRemove={handleIngredientRemove}
+                  lang={lang}
+                />
+              )}
+
+              {/* 4. PORTION SELECTOR */}
+              <PortionSelector
+                selectedId={portionId}
+                customMl={portionMl}
+                onSelect={handlePortionSelect}
+                lang={lang}
+              />
+
+              {/* 5. LIVE NUTRITION PREVIEW */}
+              <NutritionPreview items={nutritionItems} lang={lang} />
+
+              {/* 6. CONFIRM CTA */}
               {(() => {
-                const count = selections.filter(s => s.selected && parseFloat(s.amount) > 0).length;
+                const hasIngredients = ingredients.some(i => i.enabled && i.defaultQty > 0);
+                const hasSelections = selections.some(s => s.selected && parseFloat(s.amount) > 0);
+                const canAdd = hasIngredients || hasSelections;
                 return (
                   <TouchableOpacity
-                    style={[styles.primaryBtn, { marginTop: 8, opacity: count > 0 ? 1 : 0.4 }]}
+                    style={[styles.primaryBtn, { marginTop: 8, opacity: canAdd ? 1 : 0.4 }]}
                     onPress={handleAdd}
-                    disabled={count === 0}
+                    disabled={!canAdd}
                   >
                     <Text style={styles.primaryBtnText}>
-                      {tr.addToMeal} {meal}{count > 1 ? ` (${count})` : ''}
+                      {tr.addToMeal} {meal}
                     </Text>
                   </TouchableOpacity>
                 );
               })()}
 
-              <TouchableOpacity style={styles.ghostBtn} onPress={() => { setStep('idle'); setImageUri(null); setResult(null); setSelections([]); }}>
+              <TouchableOpacity style={styles.ghostBtn} onPress={() => { setStep('idle'); setImageUri(null); setResult(null); setSelections([]); setIngredients([]); setPredictions([]); }}>
                 <Text style={styles.ghostBtnText}>{lang === 'es' ? '↩ Escanear otra' : '↩ Scan another'}</Text>
               </TouchableOpacity>
             </View>
@@ -585,6 +691,12 @@ const styles = StyleSheet.create({
   checkbox:     { width: 20, height: 20, borderRadius: 6, borderWidth: 1.5,
                   borderColor: C.dim, alignItems: 'center', justifyContent: 'center' },
   checkboxActive:{ backgroundColor: C.purpleD, borderColor: C.purple },
+  predChip:     { flexDirection: 'row', alignItems: 'center', gap: 4,
+                  backgroundColor: C.elevated, borderRadius: 10, paddingHorizontal: 12,
+                  paddingVertical: 7, borderWidth: 1, borderColor: C.border },
+  predChipActive:{ backgroundColor: C.purpleD, borderColor: C.purple },
+  predText:     { color: C.muted, fontSize: 13, fontWeight: '600' },
+  predConf:     { color: C.dim, fontSize: 11 },
 });
 
 // purpleD needed in styles
