@@ -734,18 +734,16 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
   const submit = async () => {
     setError('');
     setSuccess('');
-    // Rate limit only on signup, not signin
-    if (mode === 'signup') {
-      const rl = checkRateLimit('auth:submit', LIMITS.authSubmit.maxCalls, LIMITS.authSubmit.windowMs);
-      if (!rl.allowed) {
-        const mins = Math.ceil(rl.retryAfterMs / 60);
-        const secs = rl.retryAfterMs % 60;
-        const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-        setError(lang === 'es'
-          ? `Demasiados intentos. Espera ${timeStr} e intenta de nuevo.`
-          : `Too many attempts. Please wait ${timeStr} and try again.`);
-        return;
-      }
+    // Rate limit both signup and signin to prevent brute force
+    const rl = checkRateLimit('auth:submit', LIMITS.authSubmit.maxCalls, LIMITS.authSubmit.windowMs);
+    if (!rl.allowed) {
+      const mins = Math.ceil(rl.retryAfterMs / 60);
+      const secs = rl.retryAfterMs % 60;
+      const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+      setError(lang === 'es'
+        ? `Demasiados intentos. Espera ${timeStr} e intenta de nuevo.`
+        : `Too many attempts. Please wait ${timeStr} and try again.`);
+      return;
     }
 
     if (mode === 'signup') {
@@ -834,6 +832,7 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
         }
         const { error: signInErr } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
         if (signInErr) throw signInErr;
+        setPassword(''); // Clear password from state after successful auth
         // Persist "remember me" preference
         try {
           localStorage.setItem('ruflo_rmb', rememberMe ? '1' : '0');
@@ -865,7 +864,7 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
           ? 'Error enviando correo de confirmación. Tu cuenta fue creada — intenta iniciar sesión.'
           : 'Error sending confirmation email. Your account was created — try signing in.');
       } else {
-        setError(msg || 'Something went wrong.');
+        setError(lang === 'es' ? 'Algo salió mal. Intenta de nuevo.' : 'Something went wrong. Please try again.');
       }
     } finally { setLoading(false); }
   };
@@ -874,6 +873,13 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
     const code = otpCode.replace(/\s/g, '');
     if (code.length < 6) {
       setError(lang === 'es' ? 'Ingresa el código de 6 dígitos.' : 'Enter the 6-digit code.');
+      return;
+    }
+    const rl = checkRateLimit('otp:verify', LIMITS.otpVerify.maxCalls, LIMITS.otpVerify.windowMs);
+    if (!rl.allowed) {
+      setError(lang === 'es'
+        ? `Demasiados intentos. Espera ${rl.retryAfterMs}s e intenta de nuevo.`
+        : `Too many attempts. Wait ${rl.retryAfterMs}s and try again.`);
       return;
     }
     setError('');
@@ -906,6 +912,13 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
   };
 
   const resendOtp = async () => {
+    const rl = checkRateLimit('otp:resend', LIMITS.otpResend.maxCalls, LIMITS.otpResend.windowMs);
+    if (!rl.allowed) {
+      setError(lang === 'es'
+        ? `Espera ${rl.retryAfterMs}s antes de reenviar.`
+        : `Wait ${rl.retryAfterMs}s before resending.`);
+      return;
+    }
     setError('');
     setSuccess('');
     setLoading(true);
@@ -2094,10 +2107,13 @@ function SettingsModal({ visible, onClose, lang, onChangeLang, user, tr }) {
 
   const handleChangeEmail = async () => {
     if (newEmail !== confEmail) { setMsg(tr('emailMismatch')); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) { setMsg(lang === 'es' ? 'Ingresa un correo válido.' : 'Enter a valid email.'); return; }
+    const rl = checkRateLimit('email:change', 3, 300_000);
+    if (!rl.allowed) { setMsg(lang === 'es' ? `Espera ${rl.retryAfterMs}s.` : `Wait ${rl.retryAfterMs}s.`); return; }
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ email: newEmail });
     setLoading(false);
-    setMsg(error ? error.message : tr('emailUpdated'));
+    setMsg(error ? (lang === 'es' ? 'Error al actualizar correo.' : 'Error updating email.') : tr('emailUpdated'));
     if (!error) { setNewEmail(''); setConfEmail(''); }
   };
 
@@ -2105,20 +2121,24 @@ function SettingsModal({ visible, onClose, lang, onChangeLang, user, tr }) {
     if (!currPass) { setMsg(tr('currentPassword') + ' required.'); return; }
     if (newPass !== confPass) { setMsg(tr('passwordMismatch')); return; }
     if (newPass.length < 12) { setMsg('Min 12 characters.'); return; }
+    const rl = checkRateLimit('pass:change', 3, 300_000);
+    if (!rl.allowed) { setMsg(lang === 'es' ? `Espera ${rl.retryAfterMs}s.` : `Wait ${rl.retryAfterMs}s.`); return; }
     setLoading(true);
     const { error: authError } = await supabase.auth.signInWithPassword({ email: user?.email, password: currPass });
     if (authError) { setLoading(false); setMsg(tr('wrongPassword')); return; }
     const { error } = await supabase.auth.updateUser({ password: newPass });
     setLoading(false);
-    setMsg(error ? error.message : tr('passwordUpdated'));
+    setMsg(error ? (lang === 'es' ? 'Error al cambiar contraseña.' : 'Error changing password.') : tr('passwordUpdated'));
     if (!error) { setCurrPass(''); setNewPass(''); setConfPass(''); }
   };
 
   const handleResetEmail = async () => {
+    const rl = checkRateLimit('pass:reset', 1, 300_000);
+    if (!rl.allowed) { setMsg(lang === 'es' ? `Espera ${rl.retryAfterMs}s antes de reenviar.` : `Wait ${rl.retryAfterMs}s before resending.`); return; }
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(user?.email);
     setLoading(false);
-    setMsg(error ? error.message : tr('resetSent'));
+    setMsg(error ? (lang === 'es' ? 'Error al enviar correo.' : 'Error sending email.') : tr('resetSent'));
   };
 
   const cardStyle = isDesktop ? { marginBottom: 10, padding: 14, borderRadius: 12 } : { marginBottom: 16 };

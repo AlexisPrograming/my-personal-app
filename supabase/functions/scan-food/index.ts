@@ -7,8 +7,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// Restrict CORS to the configured origin (falls back to * only if unset)
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '*';
+// Restrict CORS to the configured origin — no wildcard fallback
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,

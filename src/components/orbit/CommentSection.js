@@ -99,6 +99,7 @@ export default function CommentSection({ signalId, userId }) {
               onChangeText={setInput}
               onSubmitEditing={sendComment}
               returnKeyType="send"
+              maxLength={500}
             />
             <TouchableOpacity
               onPress={sendComment}

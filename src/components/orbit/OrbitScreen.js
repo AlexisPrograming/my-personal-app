@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Platform } from 'react-native';
 import { supabase } from '../../../supabaseConfig';
+import { checkRateLimit } from '../../utils/rateLimiter';
 import { C, F } from '../../utils/theme';
 import PulseIdCard from './PulseIdCard';
 import OrbitRing from './OrbitRing';
@@ -139,6 +140,8 @@ export default function OrbitScreen({ user, streak, todayWorkout }) {
   useEffect(() => { loadTab(activeTab); }, [activeTab]);
 
   const handleAddFriend = async (pulseId) => {
+    const rl = checkRateLimit('friend:add', 5, 60_000);
+    if (!rl.allowed) return { error: 'Too many attempts. Wait a moment.' };
     const { data: target } = await supabase
       .from('profiles')
       .select('id, username')
@@ -156,6 +159,8 @@ export default function OrbitScreen({ user, streak, todayWorkout }) {
   };
 
   const handleCreateSignal = async (payload) => {
+    const rl = checkRateLimit('signal:create', 5, 60_000);
+    if (!rl.allowed) return;
     await supabase.from('signals').insert({ author_id: user.id, ...payload });
     await loadSignals();
   };
@@ -178,7 +183,7 @@ export default function OrbitScreen({ user, streak, todayWorkout }) {
 
   const handleMarkRead = async (ids) => {
     if (!ids?.length) return;
-    await supabase.from('orbit_notifications').update({ read: true }).in('id', ids);
+    await supabase.from('orbit_notifications').update({ read: true }).in('id', ids).eq('user_id', user.id);
     setNotifications(prev => prev.map(n => ids.includes(n.id) ? { ...n, read: true } : n));
     setUnreadCount(prev => Math.max(0, prev - ids.length));
   };

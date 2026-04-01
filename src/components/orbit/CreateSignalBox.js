@@ -73,6 +73,7 @@ export default function CreateSignalBox({ onSubmit, todayWorkout }) {
         value={text}
         onChangeText={setText}
         multiline
+        maxLength={500}
       />
       {isRun && (
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>

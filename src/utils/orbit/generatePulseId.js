@@ -4,8 +4,14 @@ const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
 function randomCode() {
   let code = '#PLS-';
-  for (let i = 0; i < 4; i++) {
-    code += CHARS[Math.floor(Math.random() * CHARS.length)];
+  // Use crypto for unpredictable IDs, 8 chars = 36^8 = ~2.8 trillion combinations
+  const len = 8;
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const arr = new Uint8Array(len);
+    crypto.getRandomValues(arr);
+    for (let i = 0; i < len; i++) code += CHARS[arr[i] % CHARS.length];
+  } else {
+    for (let i = 0; i < len; i++) code += CHARS[Math.floor(Math.random() * CHARS.length)];
   }
   return code;
 }

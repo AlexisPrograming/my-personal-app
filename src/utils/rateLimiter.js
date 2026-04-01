@@ -60,4 +60,8 @@ export const LIMITS = {
   waterUpdate:  { maxCalls: 20, windowMs: 60_000 },
   // AI food scan: max 20 per hour (mirrors server-side limit)
   aiScan:       { maxCalls: 20, windowMs: 60 * 60_000 },
+  // OTP verify: max 5 attempts per 2 min
+  otpVerify:    { maxCalls: 5,  windowMs: 120_000 },
+  // OTP resend: max 3 per 2 min
+  otpResend:    { maxCalls: 3,  windowMs: 120_000 },
 };
