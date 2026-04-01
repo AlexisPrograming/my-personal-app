@@ -4,8 +4,8 @@ const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
 function randomCode() {
   let code = '#PLS-';
-  // Use crypto for unpredictable IDs, 8 chars = 36^8 = ~2.8 trillion combinations
-  const len = 8;
+  // Use crypto for unpredictable IDs, 4 chars = 36^4 = ~1.6M combinations
+  const len = 4;
   if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
     const arr = new Uint8Array(len);
     crypto.getRandomValues(arr);
