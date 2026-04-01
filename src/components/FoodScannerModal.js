@@ -310,7 +310,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
       let data, fnError;
       try {
         ({ data, error: fnError } = await supabase.functions.invoke('scan-food', {
-          body: { imageBase64: base64, mediaType: mt },
+          body: { imageBase64: base64, mediaType: mt, lang },
           headers: { Authorization: `Bearer ${session.access_token}` },
         }));
       } catch (e) {

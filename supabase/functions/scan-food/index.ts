@@ -55,13 +55,13 @@ serve(async (req) => {
   try {
     rawBody = await req.text();
   } catch {
-    return new Response(JSON.stringify({ error: 'Error leyendo la solicitud.' }), {
+    return new Response(JSON.stringify({ error: 'Error reading request.' }), {
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
   if (rawBody.length > 6 * 1024 * 1024) {
-    return new Response(JSON.stringify({ error: 'Imagen demasiado grande. Máximo 5 MB.' }), {
+    return new Response(JSON.stringify({ error: 'Image too large. Maximum 5 MB.' }), {
       status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
@@ -70,7 +70,7 @@ serve(async (req) => {
     // ── Auth ──────────────────────────────────────────────────────────────────
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'No autorizado' }), {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -83,14 +83,14 @@ serve(async (req) => {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'No autorizado' }), {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     // ── Rate limit ────────────────────────────────────────────────────────────
     if (!checkRateLimit(user.id)) {
-      return new Response(JSON.stringify({ error: 'Límite alcanzado. Máximo 20 escaneos por hora.' }), {
+      return new Response(JSON.stringify({ error: 'Rate limit reached. Maximum 20 scans per hour.' }), {
         status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -100,22 +100,23 @@ serve(async (req) => {
     try {
       body = JSON.parse(rawBody);
     } catch {
-      return new Response(JSON.stringify({ error: 'JSON inválido.' }), {
+      return new Response(JSON.stringify({ error: 'Invalid JSON.' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const { imageBase64, mediaType = 'image/jpeg' } = body as { imageBase64?: unknown; mediaType?: unknown };
+    const { imageBase64, mediaType = 'image/jpeg', lang = 'en' } = body as { imageBase64?: unknown; mediaType?: unknown; lang?: unknown };
+    const isEs = String(lang) === 'es';
 
     if (!imageBase64 || typeof imageBase64 !== 'string' || imageBase64.length < 100) {
-      return new Response(JSON.stringify({ error: 'imageBase64 requerido' }), {
+      return new Response(JSON.stringify({ error: isEs ? 'imageBase64 requerido' : 'imageBase64 required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     // M-3: enforce upper bound on base64 payload
     if (imageBase64.length > MAX_BASE64_LENGTH) {
-      return new Response(JSON.stringify({ error: 'Imagen demasiado grande. Máximo 4 MB.' }), {
+      return new Response(JSON.stringify({ error: isEs ? 'Imagen demasiado grande. Máximo 4 MB.' : 'Image too large. Maximum 4 MB.' }), {
         status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -123,7 +124,7 @@ serve(async (req) => {
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const;
     type ValidMediaType = typeof validTypes[number];
     if (!validTypes.includes(mediaType as ValidMediaType)) {
-      return new Response(JSON.stringify({ error: 'Tipo de imagen no válido' }), {
+      return new Response(JSON.stringify({ error: isEs ? 'Tipo de imagen no válido' : 'Invalid image type' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -137,26 +138,7 @@ serve(async (req) => {
       });
     }
 
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: mediaType as ValidMediaType, data: imageBase64 },
-            },
-            {
-              type: 'text',
-              text: `Analiza esta imagen de comida. Tu tarea es SEGMENTAR todos los componentes/ingredientes visibles individualmente.
+    const promptEs = `Analiza esta imagen de comida. Tu tarea es SEGMENTAR todos los componentes/ingredientes visibles individualmente.
 
 Responde ÚNICAMENTE con un objeto JSON sin markdown ni explicación. Estructura:
 {
@@ -184,7 +166,60 @@ REGLAS IMPORTANTES:
 4. Hielo tiene 0 calorías pero inclúyelo para que el usuario vea el volumen
 5. Usa valores nutricionales promedio realistas por cada 100g
 6. Si no puedes identificar algo con certeza, pon confidence "low"
-7. Máximo 10 ingredientes por imagen`,
+7. Máximo 10 ingredientes por imagen
+8. Todos los nombres DEBEN estar en español`;
+
+    const promptEn = `Analyze this food image. Your task is to SEGMENT all visible components/ingredients individually.
+
+Respond ONLY with a JSON object, no markdown or explanation. Structure:
+{
+  "foods": [
+    {
+      "name": "ingredient/component name in English",
+      "confidence": "high|medium|low",
+      "per100g": {
+        "calories": number,
+        "protein": number,
+        "carbs": number,
+        "fat": number,
+        "fiber": number
+      },
+      "note": "brief note, max 10 words",
+      "container": "cup|bowl|plate|glass|bottle|can|null"
+    }
+  ]
+}
+
+IMPORTANT RULES:
+1. SEGMENT each ingredient separately (e.g.: coffee + milk + ice, NOT "coffee with milk")
+2. Detect the container type if visible (cup, glass, plate, bowl, etc.)
+3. If you see sauces, dressings, or extras, include them as separate ingredients
+4. Ice has 0 calories but include it so the user can see volume
+5. Use realistic average nutritional values per 100g
+6. If you cannot identify something with certainty, set confidence to "low"
+7. Maximum 10 ingredients per image
+8. All names MUST be in English`;
+
+    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType as ValidMediaType, data: imageBase64 },
+            },
+            {
+              type: 'text',
+              text: isEs ? promptEs : promptEn,
             },
           ],
         }],
@@ -194,12 +229,12 @@ REGLAS IMPORTANTES:
     if (!claudeRes.ok) {
       const errBody = await claudeRes.text();
       console.error('[scan-food] Anthropic API error', claudeRes.status, errBody);
-      let userError = 'Error al contactar el servicio de IA.';
+      let userError = isEs ? 'Error al contactar el servicio de IA.' : 'Error contacting AI service.';
       try {
         const errJson = JSON.parse(errBody);
         const msg = errJson?.error?.message ?? '';
         if (msg.toLowerCase().includes('credit') || msg.toLowerCase().includes('balance')) {
-          userError = 'El servicio de escaneo no está disponible temporalmente. Intenta más tarde.';
+          userError = isEs ? 'El servicio de escaneo no está disponible temporalmente. Intenta más tarde.' : 'Scanning service temporarily unavailable. Try again later.';
         }
       } catch { /* ignore */ }
       return new Response(JSON.stringify({ error: userError }), {
@@ -213,9 +248,13 @@ REGLAS IMPORTANTES:
     const rawText = claudeData.content?.[0]?.type === 'text' ? claudeData.content[0].text.trim() : '';
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
 
+    const errNoFood = isEs
+      ? 'No pude identificar el alimento. Intenta con otra foto más clara.'
+      : 'Could not identify the food. Try a clearer photo.';
+
     if (!jsonMatch) {
       return new Response(
-        JSON.stringify({ error: 'No pude identificar el alimento. Intenta con otra foto más clara.' }),
+        JSON.stringify({ error: errNoFood }),
         { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
@@ -225,7 +264,7 @@ REGLAS IMPORTANTES:
       parsed = JSON.parse(jsonMatch[0]);
     } catch {
       return new Response(
-        JSON.stringify({ error: 'Respuesta inválida. Intenta de nuevo.' }),
+        JSON.stringify({ error: isEs ? 'Respuesta inválida. Intenta de nuevo.' : 'Invalid response. Try again.' }),
         { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
@@ -234,7 +273,7 @@ REGLAS IMPORTANTES:
     const rawFoods = Array.isArray(parsed.foods) ? parsed.foods : [];
     if (rawFoods.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'No pude identificar el alimento. Intenta con otra foto más clara.' }),
+        JSON.stringify({ error: errNoFood }),
         { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
@@ -244,7 +283,7 @@ REGLAS IMPORTANTES:
       const p = (item.per100g as Record<string, unknown>) ?? {};
       const rawContainer = String(item.container ?? '').toLowerCase();
       return {
-        name:       String(item.name ?? 'Alimento desconocido').slice(0, 100),
+        name:       String(item.name ?? (isEs ? 'Alimento desconocido' : 'Unknown food')).slice(0, 100),
         confidence: ['high', 'medium', 'low'].includes(String(item.confidence))
           ? String(item.confidence)
           : 'low',
@@ -268,7 +307,7 @@ REGLAS IMPORTANTES:
 
   } catch (err) {
     console.error('[scan-food]', err);
-    return new Response(JSON.stringify({ error: 'Error interno del servidor.' }), {
+    return new Response(JSON.stringify({ error: 'Internal server error.' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

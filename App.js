@@ -95,8 +95,8 @@ const STRINGS = {
     historyEmpty:'No history yet.\nStart logging to see your progress here.',
     gotIt:'Got it!', remove:'Remove',
     // Greetings
-    greeting_early:'Up early', greeting_morning:'Good morning', greeting_afternoon:'Good afternoon',
-    greeting_evening:'Good evening', greeting_night:'Night owl',
+    greeting_early:'Good morning', greeting_morning:'Good morning', greeting_afternoon:'Good afternoon',
+    greeting_evening:'Good evening', greeting_night:'Good night',
     // Macro labels
     macroProtein:'Protein', macroCarbs:'Carbs', macroFats:'Fats', macroCalories:'Calories',
     labelBmr:'BMR', labelTdee:'TDEE', todaysTotals:"TODAY'S TOTALS",
@@ -190,8 +190,8 @@ const STRINGS = {
     historyEmpty:'Sin historial aún.\nEmpieza a registrar para ver tu progreso.',
     gotIt:'¡Entendido!', remove:'Eliminar',
     // Greetings
-    greeting_early:'Madrugador', greeting_morning:'Buenos días', greeting_afternoon:'Buenas tardes',
-    greeting_evening:'Buenas noches', greeting_night:'Noctámbulo',
+    greeting_early:'Buenos días', greeting_morning:'Buenos días', greeting_afternoon:'Buenas tardes',
+    greeting_evening:'Buenas noches', greeting_night:'Buenas noches',
     // Macro labels
     macroProtein:'Proteína', macroCarbs:'Carbohidratos', macroFats:'Grasas', macroCalories:'Calorías',
     labelBmr:'TMB', labelTdee:'TDEE', todaysTotals:'TOTALES DE HOY',
@@ -721,13 +721,19 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
   const [username,   setUsername]   = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [error,      setError]      = useState('');
+  const [success,    setSuccess]    = useState('');
   const [loading,    setLoading]    = useState(false);
+  const [otpStep,    setOtpStep]    = useState(false);  // true = show OTP input
+  const [otpCode,    setOtpCode]    = useState('');
+  const [otpEmail,   setOtpEmail]   = useState('');      // email used for signup
+  const [otpUser,    setOtpUser]    = useState('');       // username used for signup
 
   // Check if input looks like an email
   const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
   const submit = async () => {
     setError('');
+    setSuccess('');
     // Rate limit only on signup, not signin
     if (mode === 'signup') {
       const rl = checkRateLimit('auth:submit', LIMITS.authSubmit.maxCalls, LIMITS.authSubmit.windowMs);
@@ -798,9 +804,13 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
           return;
         }
         if (data.user && !data.session) {
-          setError(lang === 'es'
-            ? 'Revisa tu correo y confirma tu cuenta antes de iniciar sesión.'
-            : 'Check your email and confirm your account before signing in.');
+          // Account created — switch to OTP verification step
+          setOtpEmail(email.trim().toLowerCase());
+          setOtpUser(username.trim());
+          setOtpStep(true);
+          setSuccess(lang === 'es'
+            ? 'Código de verificación enviado a tu correo.'
+            : 'Verification code sent to your email.');
           return;
         }
         if (data.user && data.session) {
@@ -860,7 +870,101 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
     } finally { setLoading(false); }
   };
 
+  const verifyOtp = async () => {
+    const code = otpCode.replace(/\s/g, '');
+    if (code.length < 6) {
+      setError(lang === 'es' ? 'Ingresa el código de 6 dígitos.' : 'Enter the 6-digit code.');
+      return;
+    }
+    setError('');
+    setSuccess('');
+    setLoading(true);
+    try {
+      const { data, error: verifyErr } = await supabase.auth.verifyOtp({
+        email: otpEmail,
+        token: code,
+        type: 'signup',
+      });
+      if (verifyErr) throw verifyErr;
+      // OTP verified — create profile
+      if (data.user && data.session) {
+        const { error: profileErr } = await supabase.from('profiles').upsert({
+          id: data.user.id, username: otpUser, email: otpEmail, profile_complete: false,
+        }, { onConflict: 'id' });
+        if (profileErr && profileErr.code !== '23505') console.warn('[Auth] profile upsert error:', profileErr.message);
+      }
+    } catch (e) {
+      const msg = (e.message || '').toLowerCase();
+      if (msg.includes('expired') || msg.includes('invalid')) {
+        setError(lang === 'es'
+          ? 'Código inválido o expirado. Solicita uno nuevo.'
+          : 'Invalid or expired code. Request a new one.');
+      } else {
+        setError(e.message || 'Verification failed.');
+      }
+    } finally { setLoading(false); }
+  };
+
+  const resendOtp = async () => {
+    setError('');
+    setSuccess('');
+    setLoading(true);
+    try {
+      const { error: resendErr } = await supabase.auth.resend({
+        type: 'signup',
+        email: otpEmail,
+      });
+      if (resendErr) throw resendErr;
+      setSuccess(lang === 'es'
+        ? 'Nuevo código enviado a tu correo.'
+        : 'New code sent to your email.');
+    } catch (e) {
+      setError(lang === 'es'
+        ? 'No se pudo reenviar el código. Intenta en unos segundos.'
+        : 'Could not resend code. Try again in a few seconds.');
+    } finally { setLoading(false); }
+  };
+
   const isDesktop = useIsDesktop();
+  const otpContent = (
+    <>
+      <TouchableOpacity onPress={() => { setOtpStep(false); setOtpCode(''); setError(''); setSuccess(''); }} style={{ marginBottom: 28 }}>
+        <Text style={{ color: C.muted, fontSize: 14 }}>{tr('auth_back')}</Text>
+      </TouchableOpacity>
+      <Text style={{ color: C.text, fontSize: 28, fontWeight: '800', marginBottom: 6 }}>
+        {lang === 'es' ? 'Verifica tu correo' : 'Verify your email'}
+      </Text>
+      <Text style={{ color: C.muted, fontSize: 14, marginBottom: 28, lineHeight: 20 }}>
+        {lang === 'es'
+          ? `Enviamos un código de 6 dígitos a ${otpEmail}`
+          : `We sent a 6-digit code to ${otpEmail}`}
+      </Text>
+      <View style={{ marginBottom: 24 }}>
+        <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>
+          {lang === 'es' ? 'Código de verificación' : 'Verification code'}
+        </Text>
+        <TextInput
+          style={[styles.input, { textAlign: 'center', fontSize: 24, fontWeight: '800', letterSpacing: 8 }]}
+          value={otpCode}
+          onChangeText={v => setOtpCode(v.replace(/[^0-9]/g, '').slice(0, 6))}
+          keyboardType="number-pad"
+          maxLength={6}
+          placeholder="000000"
+          placeholderTextColor={C.dim}
+          autoFocus
+        />
+      </View>
+      {error ? <Text style={{ color: C.red, fontSize: 13, marginBottom: 16, textAlign: 'center' }}>{error}</Text> : null}
+      {success ? <Text style={{ color: C.green, fontSize: 13, marginBottom: 16, textAlign: 'center' }}>{success}</Text> : null}
+      <Btn label={lang === 'es' ? 'Verificar' : 'Verify'} onPress={verifyOtp} loading={loading} />
+      <TouchableOpacity onPress={resendOtp} style={{ alignItems: 'center', marginTop: 16 }}>
+        <Text style={{ color: C.purple, fontSize: 13, fontWeight: '600' }}>
+          {lang === 'es' ? 'Reenviar código' : 'Resend code'}
+        </Text>
+      </TouchableOpacity>
+    </>
+  );
+
   const formContent = (
     <>
       <TouchableOpacity onPress={onBack} style={{ marginBottom: 28 }}>
@@ -907,15 +1011,18 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
         </TouchableOpacity>
       )}
       {error ? <Text style={{ color: C.red, fontSize: 13, marginBottom: 16, textAlign: 'center' }}>{error}</Text> : null}
+      {success ? <Text style={{ color: C.green, fontSize: 13, marginBottom: 16, textAlign: 'center' }}>{success}</Text> : null}
       <Btn label={mode === 'signup' ? tr('auth_createBtn') : tr('auth_signInBtn')} onPress={submit} loading={loading} />
     </>
   );
+
+  const activeContent = otpStep ? otpContent : formContent;
 
   if (isDesktop) {
     return (
       <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
         <View style={{ width: 460, backgroundColor: C.surface, borderRadius: 20, borderWidth: 1, borderColor: C.border, padding: 40 }}>
-          {formContent}
+          {activeContent}
         </View>
       </View>
     );
@@ -924,7 +1031,7 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 28, paddingTop: 60 }}>
-        {formContent}
+        {activeContent}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -1142,7 +1249,7 @@ function TodayTab({ profile, macros, today, onAddWater, onResetWater, streak, la
     <View style={{ width: '100%', maxWidth: isDesktop ? 860 : undefined }}>
       <View style={{ marginBottom: 20 }}>
         <Text style={{ color: C.muted, fontSize: 13 }}>{todayStr(lang)}</Text>
-        <Text style={{ color: C.text, fontSize: 24, fontWeight: '800', marginTop: 2 }}>{getGreeting(lang)}{profile.username ? `, ${profile.username}` : ''} 👋</Text>
+        <Text style={{ color: C.text, fontSize: 24, fontWeight: '800', marginTop: 2 }}>{getGreeting(lang)}{profile.username ? `, ${profile.username}` : ''}</Text>
       </View>
       <Card>
         <View style={{ alignItems: 'center', paddingVertical: 8 }}>
