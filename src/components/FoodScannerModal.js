@@ -24,8 +24,11 @@ import { supabase } from '../../supabaseConfig';
 import { segmentFood, generatePredictions } from '../scanner/segmentFood';
 import { parseIngredients } from '../scanner/ingredientParser';
 import { estimatePortion, PORTION_SIZES } from '../scanner/portionEstimator';
+import { estimateSmartPortion, formatPortionEstimate } from '../scanner/smartPortionEstimator';
+import { smartSegmentFood } from '../scanner/smartSegmentFood';
 import { calculateNutrition, getMacroPercentages } from '../nutrition/calculateNutrition';
 import { recordCorrection, applyMemory, lookupCorrection } from '../ai/mealMemory';
+import { saveMealCorrection, applySmartMemory } from '../ai/smartMealMemory';
 import IngredientEditor from './IngredientEditor';
 import NutritionPreview from './NutritionPreview';
 import PortionSelector from './PortionSelector';
@@ -146,6 +149,8 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
   const [activePredIdx, setActivePredIdx] = useState(0);     // which prediction is active
   const [portionId,     setPortionId]     = useState('medium');
   const [portionMl,     setPortionMl]     = useState(350);
+  const [smartEstimate, setSmartEstimate] = useState(null);   // PortionEstimate from smart estimator
+  const [segmentation,  setSegmentation]  = useState(null);   // SegmentationResult from smart segmenter
 
   const loadingTimer = useRef(null);
   const spinAnim     = useRef(new Animated.Value(0)).current;
@@ -187,6 +192,8 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
     setActivePredIdx(0);
     setPortionId('medium');
     setPortionMl(350);
+    setSmartEstimate(null);
+    setSegmentation(null);
     setError('');
   }, []);
 
@@ -329,21 +336,70 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
 
       // V2: Run segmentation → ingredients → portion estimation → predictions
       const detected = segmentFood(normalized);
+
+      // V3: Enhanced smart segmentation for multi-component detection
+      const smartSeg = smartSegmentFood(normalized);
+      setSegmentation(smartSeg);
+
+      // Merge smart segmentation gram estimates into parsed ingredients
       const parsed = parseIngredients(detected);
+      if (smartSeg.components.length > 0) {
+        const gramMap = {};
+        for (const comp of smartSeg.components) {
+          gramMap[comp.label.toLowerCase()] = comp.grams;
+        }
+        for (const ing of parsed) {
+          const override = gramMap[ing.name.toLowerCase()];
+          if (override !== undefined) ing.defaultQty = override;
+        }
+        // Add inferred hidden items not already in parsed list
+        for (const comp of smartSeg.components.filter(c => c.isHidden)) {
+          const alreadyParsed = parsed.some(p =>
+            p.name.toLowerCase() === comp.label.toLowerCase()
+          );
+          if (!alreadyParsed) {
+            const hiddenDetected = [{
+              label: comp.label,
+              confidence: comp.confidence,
+              level: 'low',
+              per100g: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+              note: '',
+              container: null,
+            }];
+            const hiddenParsed = parseIngredients(hiddenDetected);
+            if (hiddenParsed.length > 0) {
+              hiddenParsed[0].defaultQty = comp.grams;
+              hiddenParsed[0].enabled = false; // hidden items start disabled
+              parsed.push(hiddenParsed[0]);
+            }
+          }
+        }
+      }
       setIngredients(parsed);
 
+      // Smart portion estimation from detected objects
+      const smartEst = estimateSmartPortion(detected);
+      setSmartEstimate(smartEst);
+
+      // Use smart estimate to drive portion selection
       const container = detected.find(d => d.container)?.container ?? null;
       const portion = estimatePortion(container, parsed);
-      setPortionId(portion.portionId);
-      setPortionMl(portion.totalMl);
 
-      // Scale ingredient quantities based on portion
-      const portionData = PORTION_SIZES.find(p => p.id === portion.portionId);
+      // Prefer smart estimate when it has reasonable confidence
+      const useSmartVolume = smartEst.confidence > 0.3;
+      const effectivePortionId = useSmartVolume ? smartEst.suggestedSize : portion.portionId;
+      const effectiveMl = useSmartVolume ? smartEst.estimatedVolume : portion.totalMl;
+
+      setPortionId(effectivePortionId);
+      setPortionMl(effectiveMl);
+
+      // Scale ingredient quantities based on estimated portion
+      const portionData = PORTION_SIZES.find(p => p.id === effectivePortionId);
       if (portionData) {
         setIngredients(prev => prev.map(ing => ({
           ...ing,
           defaultQty: ing.unit === 'ml'
-            ? Math.round(portionData.ml * (ing.defaultQty / 350))
+            ? Math.round(effectiveMl * (ing.defaultQty / 350))
             : ing.defaultQty,
         })));
       }
@@ -351,6 +407,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
       // Generate meal-level predictions and apply meal memory
       let preds = generatePredictions(detected);
       try { preds = await applyMemory(preds); } catch { /* non-critical */ }
+      try { preds = await applySmartMemory(preds); } catch { /* non-critical */ }
       setPredictions(preds);
       setActivePredIdx(0);
 
@@ -411,7 +468,9 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
         const original = result.foods[0].name;
         const chosen = predictions[activePredIdx].name;
         if (original.toLowerCase() !== chosen.toLowerCase()) {
+          const ingredientNames = enabledIngredients.map(i => i.name);
           recordCorrection(original, chosen, { portionId }).catch(() => {});
+          saveMealCorrection(original, chosen, ingredientNames).catch(() => {});
         }
       }
     }
@@ -580,6 +639,33 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
                 );
               })}
 
+              {/* 2.5 SEGMENTATION SUMMARY */}
+              {segmentation && segmentation.components.length > 0 && (
+                <View style={styles.segmentationBox}>
+                  <Text style={styles.sectionTitle}>
+                    {lang === 'es' ? 'Componentes detectados' : 'Detected components'}
+                  </Text>
+                  <Text style={styles.segmentationMeta}>
+                    {lang === 'es' ? 'Tipo' : 'Type'}: {segmentation.mealType}
+                    {'  |  '}~{segmentation.totalEstimatedGrams}g {lang === 'es' ? 'total' : 'total'}
+                  </Text>
+                  {segmentation.components.map((comp, idx) => (
+                    <View key={idx} style={styles.segmentRow}>
+                      <Text style={[styles.segmentCheck, !comp.isHidden && { color: C.green }]}>
+                        {comp.isHidden ? '?' : '✓'}
+                      </Text>
+                      <Text style={styles.segmentLabel}>{comp.label}</Text>
+                      <Text style={styles.segmentGrams}>~{comp.grams}g</Text>
+                      {comp.source === 'inferred' && (
+                        <Text style={styles.segmentInferred}>
+                          {lang === 'es' ? 'inferido' : 'inferred'}
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
+
               {/* 3. INGREDIENT EDITOR */}
               {ingredients.length > 0 && (
                 <IngredientEditor
@@ -592,7 +678,20 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
                 />
               )}
 
-              {/* 4. PORTION SELECTOR */}
+              {/* 4. SMART PORTION ESTIMATE + SELECTOR */}
+              {smartEstimate && smartEstimate.confidence > 0 && (
+                <View style={styles.smartEstimateBox}>
+                  <Text style={styles.smartEstimateText}>
+                    {formatPortionEstimate(smartEstimate, lang)}
+                  </Text>
+                  {smartEstimate.container !== 'unknown' && (
+                    <Text style={styles.smartEstimateDetail}>
+                      {lang === 'es' ? 'Contenedor' : 'Container'}: {smartEstimate.container}
+                      {'  '}({Math.round(smartEstimate.confidence * 100)}%)
+                    </Text>
+                  )}
+                </View>
+              )}
               <PortionSelector
                 selectedId={portionId}
                 customMl={portionMl}
@@ -621,7 +720,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
                 );
               })()}
 
-              <TouchableOpacity style={styles.ghostBtn} onPress={() => { setStep('idle'); setImageUri(null); setResult(null); setSelections([]); setIngredients([]); setPredictions([]); }}>
+              <TouchableOpacity style={styles.ghostBtn} onPress={() => { setStep('idle'); setImageUri(null); setResult(null); setSelections([]); setIngredients([]); setPredictions([]); setSmartEstimate(null); setSegmentation(null); }}>
                 <Text style={styles.ghostBtnText}>{lang === 'es' ? '↩ Escanear otra' : '↩ Scan another'}</Text>
               </TouchableOpacity>
             </View>
@@ -697,6 +796,18 @@ const styles = StyleSheet.create({
   predChipActive:{ backgroundColor: C.purpleD, borderColor: C.purple },
   predText:     { color: C.muted, fontSize: 13, fontWeight: '600' },
   predConf:     { color: C.dim, fontSize: 11 },
+  segmentationBox:  { backgroundColor: C.card, borderRadius: 14, padding: 14,
+                      borderWidth: 1, borderColor: C.border, gap: 6 },
+  segmentationMeta: { color: C.dim, fontSize: 11, marginBottom: 2 },
+  segmentRow:       { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 3 },
+  segmentCheck:     { fontSize: 13, fontWeight: '700', color: C.dim, width: 16 },
+  segmentLabel:     { color: C.text, fontSize: 13, fontWeight: '600', flex: 1 },
+  segmentGrams:     { color: C.muted, fontSize: 12 },
+  segmentInferred:  { color: C.amber, fontSize: 10, fontStyle: 'italic' },
+  smartEstimateBox: { backgroundColor: 'rgba(139,92,246,0.08)', borderRadius: 12,
+                      padding: 12, borderWidth: 1, borderColor: 'rgba(139,92,246,0.25)' },
+  smartEstimateText: { color: C.purple, fontSize: 14, fontWeight: '700' },
+  smartEstimateDetail: { color: C.muted, fontSize: 12, marginTop: 2 },
 });
 
 // purpleD needed in styles
