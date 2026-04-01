@@ -16,18 +16,23 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// In-memory rate limiter: 20 scans per user per hour
-const _scanWindows = new Map<string, number[]>();
-const RATE_LIMIT   = 20;
-const RATE_WINDOW  = 60 * 60 * 1000; // 1 hour
+// Persistent rate limiter using DB (survives edge function restarts)
+const RATE_LIMIT  = 20;
+const RATE_WINDOW = 3600; // 1 hour in seconds
 
-function checkRateLimit(userId: string): boolean {
-  const now  = Date.now();
-  const prev = (_scanWindows.get(userId) ?? []).filter(t => now - t < RATE_WINDOW);
-  if (prev.length >= RATE_LIMIT) return false;
-  prev.push(now);
-  _scanWindows.set(userId, prev);
-  return true;
+async function checkRateLimit(userId: string, serviceClient: ReturnType<typeof createClient>): Promise<boolean> {
+  const { data, error } = await serviceClient.rpc('check_rate_limit', {
+    p_user_id: userId,
+    p_action: 'scan-food',
+    p_max_calls: RATE_LIMIT,
+    p_window_seconds: RATE_WINDOW,
+  });
+  if (error) {
+    console.error('[scan-food] rate limit check failed:', error.message);
+    // Fail open — allow the request if rate limit check itself fails
+    return true;
+  }
+  return data === true;
 }
 
 function clamp(value: unknown, min: number, max: number): number {
@@ -81,6 +86,12 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } },
     );
 
+    // Service-role client for rate limiting (bypasses RLS on rate_limits table)
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL')              ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')  ?? '',
+    );
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -88,8 +99,8 @@ serve(async (req) => {
       });
     }
 
-    // ── Rate limit ────────────────────────────────────────────────────────────
-    if (!checkRateLimit(user.id)) {
+    // ── Rate limit (persistent, DB-backed) ───────────────────────────────────
+    if (!await checkRateLimit(user.id, serviceClient)) {
       return new Response(JSON.stringify({ error: 'Rate limit reached. Maximum 20 scans per hour.' }), {
         status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

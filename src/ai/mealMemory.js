@@ -36,7 +36,8 @@ async function loadMemory() {
     if (!AsyncStorage) return [];
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
-  } catch {
+  } catch (e) {
+    if (__DEV__) console.warn('[MealMemory] loadMemory failed:', e);
     return [];
   }
 }
@@ -52,8 +53,8 @@ async function saveMemory(corrections) {
     const AsyncStorage = require('@react-native-async-storage/async-storage').default
       ?? require('react-native').AsyncStorage;
     if (AsyncStorage) await AsyncStorage.setItem(STORAGE_KEY, data);
-  } catch {
-    // Silently fail — meal memory is not critical
+  } catch (e) {
+    if (__DEV__) console.warn('[MealMemory] saveMemory failed:', e);
   }
 }
 

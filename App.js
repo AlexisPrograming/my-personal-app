@@ -765,7 +765,7 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
         // 1. Check if username is already taken
         const { data: usernameAvailable, error: usernameCheckErr } = await supabase
           .rpc('check_username_available', { check_username: username.trim() });
-        if (usernameCheckErr) console.warn('[Auth] username check error:', usernameCheckErr.message);
+        if (usernameCheckErr && __DEV__) console.warn('[Auth] username check error:', usernameCheckErr.message);
         if (usernameAvailable === false) {
           setError(tr('auth_usernameTaken'));
           return;
@@ -781,7 +781,7 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
         // 3. Handle errors
         if (signUpErr) {
           const errMsg = signUpErr.message?.toLowerCase() || '';
-          console.warn('[Auth] signUp error:', errMsg);
+          if (__DEV__) console.warn('[Auth] signUp error:', errMsg);
           // Existing email
           if (errMsg.includes('already') || errMsg.includes('registered') || errMsg.includes('exists')
               || errMsg.includes('user already') || errMsg.includes('duplicate')) {
@@ -843,7 +843,7 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
     } catch (e) {
       const msg = e.message || '';
       const lower = msg.toLowerCase();
-      console.warn('[Auth] error:', msg); // Log real error for debugging
+      if (__DEV__) console.warn('[Auth] error:', msg);
       if (lower.includes('password') && lower.includes('breach')) {
         setError(lang === 'es'
           ? 'Esta contraseña se encontró en una filtración de datos. Elige otra.'
@@ -897,7 +897,7 @@ function AuthScreen({ onBack, initialMode = 'signup', lang = 'en' }) {
         const { error: profileErr } = await supabase.from('profiles').upsert({
           id: data.user.id, username: otpUser, email: otpEmail, profile_complete: false,
         }, { onConflict: 'id' });
-        if (profileErr && profileErr.code !== '23505') console.warn('[Auth] profile upsert error:', profileErr.message);
+        if (profileErr && profileErr.code !== '23505' && __DEV__) console.warn('[Auth] profile upsert error:', profileErr.message);
       }
     } catch (e) {
       const msg = (e.message || '').toLowerCase();
@@ -2343,8 +2343,14 @@ export default function App() {
         // Fresh sign-in: always approve and load user data immediately
         sessionApprovedRef.current = true;
         if (session.user) loadUserData(session.user);
-      } else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        // Token refresh / update: only proceed if session was already approved
+      } else if (event === 'TOKEN_REFRESHED') {
+        if (!session?.user) {
+          // L4: refresh failed — force sign-out to prevent stale session
+          supabase.auth.signOut();
+          return;
+        }
+        if (sessionApprovedRef.current) loadUserData(session.user);
+      } else if (event === 'USER_UPDATED') {
         if (session.user && sessionApprovedRef.current) loadUserData(session.user);
       }
     });
@@ -2506,7 +2512,9 @@ export default function App() {
           await autoBroadcastPR(user.id, exercise.name, set.weight, set.reps, exs[exIndex].sets.length);
         }
       }
-    } catch {}
+    } catch (e) {
+      if (__DEV__) console.warn('[Orbit] PR broadcast error:', e);
+    }
   };
 
   const handleDeleteExercise = async (exIndex) => {

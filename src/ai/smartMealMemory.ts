@@ -53,7 +53,8 @@ async function loadMemory(): Promise<MealCorrectionEntry[]> {
     if (!AsyncStorage) return [];
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
-  } catch {
+  } catch (e) {
+    if (__DEV__) console.warn('[SmartMealMemory] loadMemory failed:', e);
     return [];
   }
 }
@@ -73,8 +74,8 @@ async function persistMemory(entries: MealCorrectionEntry[]): Promise<void> {
     const AsyncStorage = require('@react-native-async-storage/async-storage').default
       ?? require('react-native').AsyncStorage;
     if (AsyncStorage) await AsyncStorage.setItem(STORAGE_KEY, data);
-  } catch {
-    // Non-critical — fail silently
+  } catch (e) {
+    if (__DEV__) console.warn('[SmartMealMemory] persistMemory failed:', e);
   }
 }
 

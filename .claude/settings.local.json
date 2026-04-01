@@ -41,7 +41,8 @@
       "mcp__claude_ai_Supabase__list_projects",
       "mcp__claude_ai_Supabase__apply_migration",
       "Bash(grep -rn \"cardio\\\\|running\\\\|reps\\\\|kg\\\\|kilometers\\\\|distance\\\\|duration\\\\|exercise_type\\\\|workout_type\" 'D:/my personal app/src' --include=*.js -l)",
-      "Bash(xargs wc:*)"
+      "Bash(xargs wc:*)",
+      "mcp__claude_ai_Supabase__execute_sql"
     ]
   },
   "enableAllProjectMcpServers": true,

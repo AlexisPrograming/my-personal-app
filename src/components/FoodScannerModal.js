@@ -250,7 +250,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
       setMediaType(mime);
       setStep('preview');
     } catch (e) {
-      console.warn('[FoodScanner] pickImage error', e);
+      if (__DEV__) console.warn('[FoodScanner] pickImage error', e);
       setError(tr.errGeneric);
     }
   };
@@ -293,7 +293,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
       try {
         ({ base64, mediaType: mt } = await compressAndEncode(imageUri));
       } catch (e) {
-        console.warn('[FoodScanner] compress error', e);
+        if (__DEV__) console.warn('[FoodScanner] compress error', e);
         setError(lang === 'es' ? 'Error al procesar la imagen.' : 'Error processing image.');
         setStep('preview');
         return;
@@ -314,7 +314,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
           headers: { Authorization: `Bearer ${session.access_token}` },
         }));
       } catch (e) {
-        console.warn('[FoodScanner] fetch error', e);
+        if (__DEV__) console.warn('[FoodScanner] fetch error', e);
         setError(lang === 'es' ? 'Error de red. Verifica tu conexión.' : 'Network error. Check your connection.');
         setStep('preview');
         return;
@@ -413,7 +413,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
 
       setStep('result');
     } catch (e) {
-      console.warn('[FoodScanner] unexpected error', e);
+      if (__DEV__) console.warn('[FoodScanner] unexpected error', e);
       setError(e?.message ?? tr.errGeneric);
       setStep('preview');
     }
