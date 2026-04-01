@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { C } from '../../utils/theme';
+import { distUnit, inputToKm } from '../../utils/units';
 
 const inputStyle = {
   backgroundColor: C.elevated,
@@ -13,7 +14,7 @@ const inputStyle = {
   borderColor: C.border,
 };
 
-export default function CreateSignalBox({ onSubmit, todayWorkout }) {
+export default function CreateSignalBox({ onSubmit, todayWorkout, lang = 'en' }) {
   const [text,            setText]            = useState('');
   const [loading,         setLoading]         = useState(false);
   const [attachedWorkout, setAttachedWorkout] = useState(null);
@@ -44,7 +45,7 @@ export default function CreateSignalBox({ onSubmit, todayWorkout }) {
       signal_type = 'pr';
     } else if (isRun) {
       signal_type  = 'run';
-      workout_data = { km: Number(runKm) || 0, min: Number(runMin) || 0, is_record: false };
+      workout_data = { km: inputToKm(Number(runKm) || 0, lang), min: Number(runMin) || 0, is_record: false };
     } else if (attachedWorkout) {
       signal_type = 'workout';
       const strengthExs = attachedWorkout.exercises.filter(e => !['cv1','cv2','cv3','cv4'].includes(e?.id));
@@ -79,7 +80,7 @@ export default function CreateSignalBox({ onSubmit, todayWorkout }) {
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
           <TextInput
             style={[inputStyle, { flex: 1 }]}
-            placeholder="km"
+            placeholder={distUnit(lang)}
             placeholderTextColor={C.dim}
             value={runKm}
             onChangeText={setRunKm}

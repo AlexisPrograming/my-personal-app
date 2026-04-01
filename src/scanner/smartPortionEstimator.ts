@@ -185,6 +185,14 @@ export function formatPortionEstimate(estimate: PortionEstimate, lang: 'en' | 'e
   };
   const prefix = lang === 'es' ? 'Porción estimada' : 'Estimated portion';
   const sizeLabel = sizeLabels[lang][estimate.suggestedSize];
+  if (lang === 'en') {
+    // Convert ml → fl oz, g → oz for US display
+    const val = estimate.unit === 'ml'
+      ? Math.round(estimate.estimatedVolume / 29.5735)
+      : Math.round(estimate.estimatedVolume / 28.3495 * 10) / 10;
+    const displayUnit = estimate.unit === 'ml' ? 'fl oz' : 'oz';
+    return `${prefix}: ${sizeLabel} (~${val}${displayUnit})`;
+  }
   return `${prefix}: ${sizeLabel} (${estimate.estimatedVolume}${estimate.unit})`;
 }
 

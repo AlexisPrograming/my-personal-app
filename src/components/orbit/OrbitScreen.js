@@ -14,7 +14,7 @@ import NotificationItem from './NotificationItem';
 
 const TABS = ['ORBIT', 'SIGNAL', 'BATTLES', 'ALERTS'];
 
-export default function OrbitScreen({ user, streak, todayWorkout }) {
+export default function OrbitScreen({ user, streak, todayWorkout, lang = 'en' }) {
   const [activeTab,    setActiveTab]    = useState('ORBIT');
   const [loading,      setLoading]      = useState(false);
   const [refreshing,   setRefreshing]   = useState(false);
@@ -343,7 +343,7 @@ function OrbitTab({ user, streak, weeklyCount, friends, onAddFriend }) {
 function SignalTab({ signals, userId, onCreateSignal, onDeleteSignal, todayWorkout }) {
   return (
     <>
-      <CreateSignalBox onSubmit={onCreateSignal} todayWorkout={todayWorkout} />
+      <CreateSignalBox onSubmit={onCreateSignal} todayWorkout={todayWorkout} lang={lang} />
       {signals.length === 0 ? (
         <View style={{ alignItems: 'center', paddingVertical: 32 }}>
           <Text style={{ fontSize: 32 }}>📡</Text>
@@ -352,7 +352,7 @@ function SignalTab({ signals, userId, onCreateSignal, onDeleteSignal, todayWorko
           </Text>
         </View>
       ) : (
-        signals.map(s => <SignalCard key={s.id} signal={s} userId={userId} onDelete={s.author_id === userId ? () => onDeleteSignal(s.id) : null} />)
+        signals.map(s => <SignalCard key={s.id} signal={s} userId={userId} onDelete={s.author_id === userId ? () => onDeleteSignal(s.id) : null} lang={lang} />)
       )}
     </>
   );

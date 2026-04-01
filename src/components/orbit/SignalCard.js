@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Alert, Platform } from 'react-native';
 import { C } from '../../utils/theme';
+import { kgToDisplay, weightUnit, kmToDisplay, distUnit, fmtPace } from '../../utils/units';
 import ReactionBar from './ReactionBar';
 import CommentSection from './CommentSection';
 
@@ -14,7 +15,8 @@ function timeAgo(dateStr) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-function PRBanner({ data }) {
+function PRBanner({ data, lang = 'en' }) {
+  const wu = weightUnit(lang);
   return (
     <View style={{ backgroundColor: 'rgba(251,191,36,0.1)', borderRadius: 10, borderWidth: 1, borderColor: C.amber, padding: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -23,7 +25,7 @@ function PRBanner({ data }) {
       </View>
       <Text style={{ color: C.text, fontWeight: '700', fontSize: 15 }}>{data?.exercise || 'Exercise'}</Text>
       <Text style={{ color: C.amber, fontSize: 13, marginTop: 4 }}>
-        {data?.weight}kg × {data?.reps} reps
+        {kgToDisplay(data?.weight, lang)}{wu} × {data?.reps} reps
       </Text>
     </View>
   );
@@ -32,25 +34,28 @@ function PRBanner({ data }) {
 const chipStyle = { backgroundColor: C.elevated, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: C.border };
 const chipText  = { color: C.muted, fontSize: 12 };
 
-function WorkoutBanner({ data, text }) {
+function WorkoutBanner({ data, text, lang = 'en' }) {
+  const wu = weightUnit(lang);
   return (
     <View>
       {text ? <Text style={{ color: C.text, fontSize: 14, marginBottom: 8 }}>{text}</Text> : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {data?.sets     ? <View style={chipStyle}><Text style={chipText}>{data.sets} sets</Text></View> : null}
         {data?.reps     ? <View style={chipStyle}><Text style={chipText}>{data.reps} reps</Text></View> : null}
-        {data?.weight   ? <View style={chipStyle}><Text style={[chipText, { color: C.amber }]}>{data.weight}kg</Text></View> : null}
-        {!data?.weight && data?.volume ? <View style={chipStyle}><Text style={[chipText, { color: C.amber }]}>{Math.round(data.volume)}kg vol</Text></View> : null}
+        {data?.weight   ? <View style={chipStyle}><Text style={[chipText, { color: C.amber }]}>{kgToDisplay(data.weight, lang)}{wu}</Text></View> : null}
+        {!data?.weight && data?.volume ? <View style={chipStyle}><Text style={[chipText, { color: C.amber }]}>{Math.round(kgToDisplay(data.volume, lang))}{wu} vol</Text></View> : null}
         {data?.duration ? <View style={chipStyle}><Text style={chipText}>{data.duration}</Text></View> : null}
       </View>
     </View>
   );
 }
 
-function RunBanner({ data, text }) {
+function RunBanner({ data, text, lang = 'en' }) {
   const km   = data?.km   ?? 0;
   const min  = data?.min  ?? 0;
-  const pace = km > 0 && min > 0 ? (min / km).toFixed(1) : null;
+  const du   = distUnit(lang);
+  const dVal = kmToDisplay(km, lang);
+  const pace = km > 0 && min > 0 ? fmtPace(km, min, lang) : null;
   const isRecord = data?.is_record;
   return (
     <View style={{ backgroundColor: 'rgba(0,229,255,0.07)', borderRadius: 10, borderWidth: 1, borderColor: C.cyan, padding: 12 }}>
@@ -61,9 +66,9 @@ function RunBanner({ data, text }) {
         </Text>
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: text ? 8 : 0 }}>
-        {km  > 0 && <View style={chipStyle}><Text style={[chipText, { color: C.cyan }]}>{km} km</Text></View>}
+        {km  > 0 && <View style={chipStyle}><Text style={[chipText, { color: C.cyan }]}>{dVal} {du}</Text></View>}
         {min > 0 && <View style={chipStyle}><Text style={[chipText, { color: C.text }]}>{min} min</Text></View>}
-        {pace    && <View style={chipStyle}><Text style={[chipText, { color: C.muted }]}>{pace} min/km</Text></View>}
+        {pace    && <View style={chipStyle}><Text style={[chipText, { color: C.muted }]}>{pace}</Text></View>}
       </View>
       {text ? <Text style={{ color: C.text, fontSize: 13, lineHeight: 19 }}>{text}</Text> : null}
     </View>
@@ -82,7 +87,7 @@ function MacroBanner({ text }) {
   );
 }
 
-export default function SignalCard({ signal, userId, onDelete }) {
+export default function SignalCard({ signal, userId, onDelete, lang = 'en' }) {
   const { id, signal_type, text_content, workout_data, is_pr, created_at, author, reactions, user_reactions } = signal;
   const authorName = author?.username || 'Someone';
 
@@ -118,9 +123,9 @@ export default function SignalCard({ signal, userId, onDelete }) {
       </View>
 
       {/* Body */}
-      {signal_type === 'pr'         && <PRBanner data={workout_data} />}
-      {signal_type === 'workout'    && <WorkoutBanner data={workout_data} text={text_content} />}
-      {signal_type === 'run'        && <RunBanner data={workout_data} text={text_content} />}
+      {signal_type === 'pr'         && <PRBanner data={workout_data} lang={lang} />}
+      {signal_type === 'workout'    && <WorkoutBanner data={workout_data} text={text_content} lang={lang} />}
+      {signal_type === 'run'        && <RunBanner data={workout_data} text={text_content} lang={lang} />}
       {signal_type === 'post'       && <Text style={{ color: C.text, fontSize: 14, lineHeight: 21 }}>{text_content}</Text>}
       {signal_type === 'macro_goal' && <MacroBanner text={text_content} />}
 

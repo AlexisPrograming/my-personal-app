@@ -65,9 +65,9 @@ const T = {
     confidence:   { high: 'High confidence', medium: 'Medium confidence', low: 'Low confidence' },
     lowWarn:      "I'm not sure about this food — verify macros before adding.",
     amountLabel:  'Amount',
-    quickAmounts: ['50g', '100g', '150g', '200g'],
+    quickAmounts: ['2oz', '4oz', '6oz', '8oz'],
     macros:       { cal: 'Calories', p: 'Protein', c: 'Carbs', f: 'Fat', fiber: 'Fiber' },
-    units:        ['g', 'kg', 'oz', 'lb'],
+    units:        ['oz', 'lb', 'g', 'kg'],
     loading:      ['Identifying the food…', 'Analyzing macros…', 'Almost there…'],
     errSize:      'Image must be under 10 MB.',
     errType:      'Only JPG, PNG or WEBP allowed.',
@@ -332,7 +332,9 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
         : { foods: [{ name: data.name, confidence: data.confidence, per100g: data.per100g, note: data.note }] };
       setResult(normalized);
       setImageBase64(base64);
-      setSelections(normalized.foods.map(() => ({ amount: '100', unit: 'g', selected: true })));
+      const defaultUnit = lang === 'en' ? 'oz' : 'g';
+      const defaultAmt  = lang === 'en' ? '4' : '100';
+      setSelections(normalized.foods.map(() => ({ amount: defaultAmt, unit: defaultUnit, selected: true })));
 
       // V2: Run segmentation → ingredients → portion estimation → predictions
       const detected = segmentFood(normalized);
@@ -618,7 +620,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
               </Text>
 
               {result.foods.map((food, i) => {
-                const sel = selections[i] ?? { amount: '100', unit: 'g', selected: true };
+                const sel = selections[i] ?? { amount: lang === 'en' ? '4' : '100', unit: lang === 'en' ? 'oz' : 'g', selected: true };
                 return (
                   <View key={i} style={[styles.foodCard, { paddingVertical: 10 }]}>
                     <TouchableOpacity onPress={() => toggleSelected(i)}

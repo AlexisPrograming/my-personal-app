@@ -16,6 +16,12 @@ import OrbitScreen from './src/components/orbit/OrbitScreen';
 import { autoBroadcastPR, getPreviousBest } from './src/utils/orbit/autoBroadcastPR';
 import { useFonts } from 'expo-font';
 import {
+  isImperial, weightUnit, heightUnit, distUnit, waterUnit, paceUnit,
+  fmtWeight, fmtWeightVal, fmtHeight, fmtDist, fmtPace, fmtWater,
+  kgToDisplay, inputToKg, kmToDisplay, inputToKm, mlToDisplay, inputToMl,
+  bodyWeightRange, waterQuickAmounts, cmToFtIn, ftInToCm,
+} from './src/utils/units';
+import {
   BarlowCondensed_400Regular,
   BarlowCondensed_600SemiBold,
   BarlowCondensed_700Bold,
@@ -76,13 +82,13 @@ const STRINGS = {
     today:'Today', hydration:'HYDRATION', todaysThought:"TODAY'S THOUGHT", dailyTargets:'YOUR DAILY TARGETS',
     nutritionLog:'Nutrition Log', breakfast:'Breakfast', lunch:'Lunch', dinner:'Dinner', snacks:'Snacks',
     searchFood:'Search food…', addCustom:'+ Add custom food', noResults:'No results. Add it manually?',
-    customFoodName:'Food name', weightG:'Weight (g, optional)', calories:'Calories', protein:'Protein (g)',
+    customFoodName:'Food name', weightG:'Weight (oz, optional)', calories:'Calories', protein:'Protein (g)',
     carbs:'Carbs (g)', fats:'Fats (g)', save:'Save', cancel:'Cancel',
     training:'Training', addExerciseFrom:'Add exercise from', logBtn:'Log',
     finishWorkout:'Finish Workout', workoutDone:'✓ Done — Tap to undo',
-    exercises:'Exercises', totalSets:'Total sets', volumeKg:'Volume kg', totalKm:'Km run',
+    exercises:'Exercises', totalSets:'Total sets', volumeLabel:'Volume (lbs)', totalDistLabel:'Miles run',
     weightHistory:'WEIGHT HISTORY', macroPlan:'MACRO PLAN', editProfile:'Edit Profile',
-    signOut:'Sign Out', settings:'Settings', logWeight:'Log', weightPlaceholder:"Today's weight (kg)",
+    signOut:'Sign Out', settings:'Settings', logWeight:'Log', weightPlaceholder:"Today's weight (lbs)",
     settingsTitle:'Settings', language:'Language', english:'English', spanish:'Spanish',
     changeEmail:'Change Email', newEmail:'New email address', confirmEmail:'Confirm new email',
     changePassword:'Change Password', currentPassword:'Current password', newPassword:'New password (min 12 chars)', confirmPassword:'Confirm new password',
@@ -104,14 +110,14 @@ const STRINGS = {
     cat_push:'Push', cat_pull:'Pull', cat_legs:'Legs', cat_core:'Core', cat_cardio:'Cardio',
     // Food form
     addFoodTo:'Add food to', addTo:'Add to', addFoodManually:'+ Add food manually',
-    foodNameRequired:'Food name *', weightGLabel:'Weight (g)', caloriesKcalLabel:'Calories (kcal)',
+    foodNameRequired:'Food name *', weightGLabel:'Weight (oz)', caloriesKcalLabel:'Calories (kcal)',
     proteinGLabel:'Protein (g)', carbsGLabel:'Carbs (g)', fatGLabel:'Fat (g)',
     notFoundAddManually:'not found — add it manually',
     // Help modal
     helpTitle:'⚡ How to use Training',
     help1title:'Pick a category', help1desc:'Choose Push, Pull, Legs, Core or Cardio to browse exercises.',
     help2title:'Add an exercise', help2desc:'Tap "+ Add exercise" and select one from the list.',
-    help3title:'Log a set', help3desc:'Enter the weight in kg and the number of reps, then tap Log. Repeat for each set.',
+    help3title:'Log a set', help3desc:'Enter the weight in lbs and the number of reps, then tap Log. Repeat for each set.',
     help4title:'Edit or delete', help4desc:"Tap ✏ to fix a set's weight or reps. Tap ✕ on a set to delete it, or ✕ next to the exercise name to remove the whole exercise.",
     help5title:'Finish', help5desc:"When you're done, tap \"Finish Workout\" to save your session and add to your streak.",
     // Setup
@@ -122,12 +128,12 @@ const STRINGS = {
     setup_act_title:'Activity & training', setup_act_sub:'Determines your TDEE — calories you actually burn each day.',
     setup_prefs_title:'Preferences', setup_prefs_sub:'Fine-tune your plan to match your lifestyle.',
     setup_bioSex:'Biological sex', setup_male:'Male', setup_female:'Female',
-    setup_age:'Age', setup_heightCm:'Height (cm)', setup_weightKg:'Weight (kg)',
+    setup_age:'Age', setup_heightLabel:'Height (ft / in)', setup_weightLabel:'Weight (lbs)',
     setup_bodyFat:'Body fat %', setup_optional:'optional',
     setup_actLevel:'Daily activity level', setup_trainStyle:'Training style',
     setup_trainDays:'Training days per week', setup_dietStyle:'Diet style',
     setup_sleepH:'Sleep (hours)', setup_timeFrame:'Time frame (months)',
-    setup_waterTarget:'Daily water target (ml)', setup_macroPreview:'Your macro preview',
+    setup_waterTarget:'Daily water target (oz)', setup_macroPreview:'Your macro preview',
     setup_fillBody:'Fill in body data to see the preview.',
     setup_back:'Back', setup_continue:'Continue →', setup_buildPlan:'Build My Plan →',
     // Goals
@@ -175,7 +181,7 @@ const STRINGS = {
     carbs:'Carbohidratos (g)', fats:'Grasas (g)', save:'Guardar', cancel:'Cancelar',
     training:'Entrenamiento', addExerciseFrom:'Agregar ejercicio de', logBtn:'Registrar',
     finishWorkout:'Terminar Entrenamiento', workoutDone:'✓ Listo — Toca para deshacer',
-    exercises:'Ejercicios', totalSets:'Series totales', volumeKg:'Volumen kg', totalKm:'Km corridos',
+    exercises:'Ejercicios', totalSets:'Series totales', volumeLabel:'Volumen (kg)', totalDistLabel:'Km corridos',
     weightHistory:'HISTORIAL DE PESO', macroPlan:'PLAN DE MACROS', editProfile:'Editar Perfil',
     signOut:'Cerrar Sesión', settings:'Ajustes', logWeight:'Registrar', weightPlaceholder:'Peso de hoy (kg)',
     settingsTitle:'Ajustes', language:'Idioma', english:'Inglés', spanish:'Español',
@@ -217,7 +223,7 @@ const STRINGS = {
     setup_act_title:'Actividad y entrenamiento', setup_act_sub:'Determina tu TDEE — las calorías que quemas cada día.',
     setup_prefs_title:'Preferencias', setup_prefs_sub:'Ajusta tu plan a tu estilo de vida.',
     setup_bioSex:'Sexo biológico', setup_male:'Masculino', setup_female:'Femenino',
-    setup_age:'Edad', setup_heightCm:'Altura (cm)', setup_weightKg:'Peso (kg)',
+    setup_age:'Edad', setup_heightLabel:'Altura (cm)', setup_weightLabel:'Peso (kg)',
     setup_bodyFat:'% de grasa corporal', setup_optional:'opcional',
     setup_actLevel:'Nivel de actividad diaria', setup_trainStyle:'Estilo de entrenamiento',
     setup_trainDays:'Días de entrenamiento por semana', setup_dietStyle:'Estilo de dieta',
@@ -372,12 +378,14 @@ const CARDIO_DIST = new Set(['cv1','cv2']); // Running, Cycling — use km + min
 function isCardio(ex)     { return CARDIO_IDS.has(ex?.id);  }
 function isDistCardio(ex) { return CARDIO_DIST.has(ex?.id); }
 
-function fmtCardioSet(set, ex) {
+function fmtCardioSet(set, ex, lang = 'en') {
   if (isDistCardio(ex)) {
     const km  = set.km  ?? 0;
     const min = set.min ?? 0;
-    const pace = km > 0 && min > 0 ? ` · ${(min / km).toFixed(1)} min/km` : '';
-    return `${km} km  ·  ${min} min${pace}`;
+    const dVal = kmToDisplay(km, lang);
+    const du   = distUnit(lang);
+    const pace = km > 0 && min > 0 ? ` · ${fmtPace(km, min, lang)}` : '';
+    return `${dVal} ${du}  ·  ${min} min${pace}`;
   }
   const min    = set.min    ?? 0;
   const rounds = set.rounds ?? 0;
@@ -552,7 +560,7 @@ function CalorieRing({ consumed, goal, size = 170, stroke = 13 }) {
   );
 }
 
-function WaterGlass({ current, target, onAdd, onReset }) {
+function WaterGlass({ current, target, onAdd, onReset, lang = 'en' }) {
   const pct      = Math.min(1, (current || 0) / (target || 1));
   const fillAnim = useRef(new Animated.Value(pct)).current;
   useEffect(() => {
@@ -561,18 +569,22 @@ function WaterGlass({ current, target, onAdd, onReset }) {
   const glassH  = 72;
   const fillH   = fillAnim.interpolate({ inputRange: [0, 1], outputRange: [0, glassH] });
   const fillColor = pct < 0.4 ? C.dim : pct < 0.8 ? C.cyan : C.green;
+  const wu       = waterUnit(lang);
+  const dispCurr = mlToDisplay(current, lang);
+  const dispTgt  = mlToDisplay(target, lang);
+  const quickAmts = waterQuickAmounts(lang);
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
       <View style={{ width: 36, height: glassH + 8, borderWidth: 2, borderColor: C.cyan, borderTopWidth: 0, borderRadius: 4, overflow: 'hidden', justifyContent: 'flex-end' }}>
         <Animated.View style={{ height: fillH, backgroundColor: fillColor, borderRadius: 2 }} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ color: C.text, fontSize: 20, fontWeight: '700' }}>{current} <Text style={{ color: C.muted, fontSize: 12, fontWeight: '400' }}>/ {target} ml</Text></Text>
-        <Text style={{ color: pct >= 1 ? C.green : C.cyan, fontSize: 11, marginTop: 2 }}>{Math.round(pct * 100)}% hydrated{pct >= 1 ? '  ✓' : ''}</Text>
+        <Text style={{ color: C.text, fontSize: 20, fontWeight: '700' }}>{dispCurr} <Text style={{ color: C.muted, fontSize: 12, fontWeight: '400' }}>/ {dispTgt} {wu}</Text></Text>
+        <Text style={{ color: pct >= 1 ? C.green : C.cyan, fontSize: 11, marginTop: 2 }}>{Math.round(pct * 100)}% {lang === 'es' ? 'hidratado' : 'hydrated'}{pct >= 1 ? '  ✓' : ''}</Text>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-          {[250, 500, 750].map(ml => (
-            <TouchableOpacity key={ml} onPress={() => onAdd(ml)} style={{ backgroundColor: C.elevated, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: C.border }}>
-              <Text style={{ color: C.cyan, fontSize: 12, fontWeight: '600' }}>+{ml}</Text>
+          {quickAmts.map(amt => (
+            <TouchableOpacity key={amt} onPress={() => onAdd(isImperial(lang) ? inputToMl(amt, lang) : amt)} style={{ backgroundColor: C.elevated, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: C.border }}>
+              <Text style={{ color: C.cyan, fontSize: 12, fontWeight: '600' }}>+{amt}</Text>
             </TouchableOpacity>
           ))}
           <TouchableOpacity onPress={onReset} style={{ backgroundColor: C.elevated, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: C.border }}>
@@ -603,12 +615,12 @@ function StreakBadge({ streak }) {
   );
 }
 
-function WeightChart({ weights }) {
+function WeightChart({ weights, lang = 'en' }) {
   const { width } = useWindowDimensions();
   if (!weights || weights.length < 2) {
-    return <View style={{ height: 80, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: C.dim, fontSize: 12 }}>Log at least 2 weigh-ins to see a trend</Text></View>;
+    return <View style={{ height: 80, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: C.dim, fontSize: 12 }}>{lang === 'es' ? 'Registra al menos 2 pesos para ver la tendencia' : 'Log at least 2 weigh-ins to see a trend'}</Text></View>;
   }
-  const vals   = weights.map(w => w.weight_kg);
+  const vals   = weights.map(w => kgToDisplay(w.weight_kg, lang));
   const min    = Math.min(...vals) - 1;
   const max    = Math.max(...vals) + 1;
   const containerW = width >= DESKTOP_BP ? Math.min(width - 280, 900) : width;
@@ -1059,6 +1071,8 @@ function SetupScreen({ onComplete, userId, lang = 'en' }) {
   const [sex,          setSex]          = useState('male');
   const [age,          setAge]          = useState('');
   const [height,       setHeight]       = useState('');
+  const [heightFt,     setHeightFt]     = useState('');
+  const [heightIn,     setHeightIn]     = useState('');
   const [weight,       setWeight]       = useState('');
   const [bodyFat,      setBodyFat]      = useState('');
   const [activity,     setActivity]     = useState('moderate');
@@ -1067,7 +1081,7 @@ function SetupScreen({ onComplete, userId, lang = 'en' }) {
   const [diet,         setDiet]         = useState('standard');
   const [sleep,        setSleep]        = useState('7');
   const [timeFrame,    setTimeFrame]    = useState('3');
-  const [waterTarget,  setWaterTarget]  = useState('2500');
+  const [waterTarget,  setWaterTarget]  = useState(isImperial(lang) ? '96' : '2500');
   const [saving,       setSaving]       = useState(false);
 
   const animateStep = (dir) => {
@@ -1080,23 +1094,32 @@ function SetupScreen({ onComplete, userId, lang = 'en' }) {
 
   const clampNum = (val, min, max) => { const n = Number(val); return isNaN(n) ? min : Math.min(max, Math.max(min, n)); };
 
+  const wuSetup = weightUnit(lang);
+  const wRangeSetup = bodyWeightRange(lang);
   const goNext = () => {
     if (step === 1) {
       const a = Number(age), h = Number(height), w = Number(weight), bf = bodyFat ? Number(bodyFat) : null;
-      if (!age || isNaN(a) || a < 10 || a > 120) { Alert.alert('Invalid age', 'Enter an age between 10 and 120.'); return; }
-      if (!height || isNaN(h) || h < 50 || h > 300) { Alert.alert('Invalid height', 'Enter a height between 50 and 300 cm.'); return; }
-      if (!weight || isNaN(w) || w < 10 || w > 500) { Alert.alert('Invalid weight', 'Enter a weight between 10 and 500 kg.'); return; }
-      if (bf !== null && (isNaN(bf) || bf < 0 || bf > 70)) { Alert.alert('Invalid body fat', 'Enter a body fat % between 0 and 70.'); return; }
+      if (!age || isNaN(a) || a < 10 || a > 120) { Alert.alert(lang === 'es' ? 'Edad inválida' : 'Invalid age', lang === 'es' ? 'Ingresa una edad entre 10 y 120.' : 'Enter an age between 10 and 120.'); return; }
+      if (isImperial(lang)) {
+        const ft = Number(heightFt), inches = Number(heightIn);
+        if (isNaN(ft) || ft < 1 || ft > 9 || isNaN(inches) || inches < 0 || inches > 11) { Alert.alert('Invalid height', 'Enter a height between 1\'0" and 9\'11".'); return; }
+      } else {
+        if (!height || isNaN(h) || h < 50 || h > 300) { Alert.alert(lang === 'es' ? 'Altura inválida' : 'Invalid height', lang === 'es' ? 'Ingresa una altura entre 50 y 300 cm.' : 'Enter a height between 50 and 300 cm.'); return; }
+      }
+      if (!weight || isNaN(w) || w < wRangeSetup.min || w > wRangeSetup.max) { Alert.alert(lang === 'es' ? 'Peso inválido' : 'Invalid weight', `${lang === 'es' ? 'Ingresa un peso entre' : 'Enter a weight between'} ${wRangeSetup.min} ${lang === 'es' ? 'y' : 'and'} ${wRangeSetup.max} ${wuSetup}.`); return; }
+      if (bf !== null && (isNaN(bf) || bf < 0 || bf > 70)) { Alert.alert(lang === 'es' ? 'Grasa inválida' : 'Invalid body fat', lang === 'es' ? 'Ingresa un % de grasa entre 0 y 70.' : 'Enter a body fat % between 0 and 70.'); return; }
     }
     if (step === 2) {
       const td = Number(trainingDays);
-      if (!trainingDays || isNaN(td) || td < 0 || td > 7) { Alert.alert('Invalid training days', 'Enter 0–7 days per week.'); return; }
+      if (!trainingDays || isNaN(td) || td < 0 || td > 7) { Alert.alert(lang === 'es' ? 'Días inválidos' : 'Invalid training days', lang === 'es' ? 'Ingresa entre 0 y 7 días.' : 'Enter 0–7 days per week.'); return; }
     }
     if (step === 3) {
       const sl = Number(sleep), tf = Number(timeFrame), wt = Number(waterTarget);
-      if (!sleep || isNaN(sl) || sl < 0 || sl > 24) { Alert.alert('Invalid sleep', 'Enter sleep hours between 0 and 24.'); return; }
-      if (!timeFrame || isNaN(tf) || tf < 1 || tf > 60) { Alert.alert('Invalid time frame', 'Enter a time frame between 1 and 60 months.'); return; }
-      if (!waterTarget || isNaN(wt) || wt < 0 || wt > 10000) { Alert.alert('Invalid water target', 'Enter a water target between 0 and 10000 ml.'); return; }
+      if (!sleep || isNaN(sl) || sl < 0 || sl > 24) { Alert.alert(lang === 'es' ? 'Sueño inválido' : 'Invalid sleep', lang === 'es' ? 'Ingresa horas de sueño entre 0 y 24.' : 'Enter sleep hours between 0 and 24.'); return; }
+      if (!timeFrame || isNaN(tf) || tf < 1 || tf > 60) { Alert.alert(lang === 'es' ? 'Plazo inválido' : 'Invalid time frame', lang === 'es' ? 'Ingresa un plazo entre 1 y 60 meses.' : 'Enter a time frame between 1 and 60 months.'); return; }
+      const wuWater = waterUnit(lang);
+      const maxW = isImperial(lang) ? 340 : 10000;
+      if (!waterTarget || isNaN(wt) || wt < 0 || wt > maxW) { Alert.alert(lang === 'es' ? 'Meta de agua inválida' : 'Invalid water target', `${lang === 'es' ? 'Ingresa un valor entre 0 y' : 'Enter a value between 0 and'} ${maxW} ${wuWater}.`); return; }
     }
     animateStep(1); setStep(s => s + 1);
   };
@@ -1106,18 +1129,21 @@ function SetupScreen({ onComplete, userId, lang = 'en' }) {
     const rl = checkRateLimit('profile:save', LIMITS.profileSave.maxCalls, LIMITS.profileSave.windowMs);
     if (!rl.allowed) { showRateLimitAlert(rl.retryAfterMs, 'saving your profile'); return; }
     setSaving(true);
+    const heightCm = isImperial(lang) ? ftInToCm(Number(heightFt) || 0, Number(heightIn) || 0) : clampNum(height, 50, 300);
+    const weightKg = inputToKg(Number(weight), lang);
+    const waterMl  = inputToMl(Number(waterTarget), lang);
     const profileData = {
       goal, sex,
       age:            clampNum(age, 10, 120),
-      height_cm:      clampNum(height, 50, 300),
-      weight_kg:      clampNum(weight, 10, 500),
+      height_cm:      clampNum(heightCm, 50, 300),
+      weight_kg:      clampNum(weightKg, 10, 500),
       body_fat_pct:   bodyFat ? clampNum(bodyFat, 0, 70) : null,
       activity, training_type: trainingType,
       training_days:  clampNum(trainingDays, 0, 7),
       diet,
       sleep_hours:    clampNum(sleep, 0, 24),
       time_frame:     clampNum(timeFrame, 1, 60),
-      water_target:   clampNum(waterTarget, 0, 10000),
+      water_target:   clampNum(waterMl, 0, 10000),
       profile_complete: true,
     };
     try {
@@ -1177,10 +1203,20 @@ function SetupScreen({ onComplete, userId, lang = 'en' }) {
             </View>
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
               <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_age')}</Text><TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="number-pad" placeholder="e.g. 28" placeholderTextColor={C.dim} nativeID="setup-age" /></View>
-              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_heightCm')}</Text><TextInput style={styles.input} value={height} onChangeText={setHeight} keyboardType="number-pad" placeholder="e.g. 175" placeholderTextColor={C.dim} nativeID="setup-height" /></View>
+              {isImperial(lang) ? (
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_heightLabel')}</Text>
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    <TextInput style={[styles.input, { flex: 1 }]} value={heightFt} onChangeText={setHeightFt} keyboardType="number-pad" placeholder="ft" placeholderTextColor={C.dim} nativeID="setup-height-ft" />
+                    <TextInput style={[styles.input, { flex: 1 }]} value={heightIn} onChangeText={setHeightIn} keyboardType="number-pad" placeholder="in" placeholderTextColor={C.dim} nativeID="setup-height-in" />
+                  </View>
+                </View>
+              ) : (
+                <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_heightLabel')}</Text><TextInput style={styles.input} value={height} onChangeText={setHeight} keyboardType="number-pad" placeholder="e.g. 175" placeholderTextColor={C.dim} nativeID="setup-height" /></View>
+              )}
             </View>
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_weightKg')}</Text><TextInput style={styles.input} value={weight} onChangeText={setWeight} keyboardType="number-pad" placeholder="e.g. 75" placeholderTextColor={C.dim} nativeID="setup-weight" /></View>
+              <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_weightLabel')}</Text><TextInput style={styles.input} value={weight} onChangeText={setWeight} keyboardType="number-pad" placeholder={isImperial(lang) ? 'e.g. 165' : 'e.g. 75'} placeholderTextColor={C.dim} nativeID="setup-weight" /></View>
               <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_bodyFat')} <Text style={{ color: C.dim }}>({tr('setup_optional')})</Text></Text><TextInput style={styles.input} value={bodyFat} onChangeText={setBodyFat} keyboardType="number-pad" placeholder="e.g. 18" placeholderTextColor={C.dim} nativeID="setup-bodyfat" /></View>
             </View>
           </View>
@@ -1222,12 +1258,14 @@ function SetupScreen({ onComplete, userId, lang = 'en' }) {
               <View style={{ flex: 1 }}><Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_timeFrame')}</Text><TextInput style={styles.input} value={timeFrame} onChangeText={setTimeFrame} keyboardType="number-pad" placeholder="3" placeholderTextColor={C.dim} nativeID="setup-timeframe" /></View>
             </View>
             <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_waterTarget')}</Text>
-            <TextInput style={[styles.input, { width: 140 }]} value={waterTarget} onChangeText={setWaterTarget} keyboardType="number-pad" placeholder="2500" placeholderTextColor={C.dim} nativeID="setup-water" />
+            <TextInput style={[styles.input, { width: 140 }]} value={waterTarget} onChangeText={setWaterTarget} keyboardType="number-pad" placeholder={isImperial(lang) ? '96' : '2500'} placeholderTextColor={C.dim} nativeID="setup-water" />
             {/* Live preview */}
             <Card style={{ marginTop: 20 }}>
               <Text style={{ color: C.muted, fontSize: 12, marginBottom: 6 }}>{tr('setup_macroPreview')}</Text>
               {(() => {
-                const m = calcMacros({ weight: Number(weight), height: Number(height), age: Number(age), sex, goal, activity });
+                const previewH = isImperial(lang) ? ftInToCm(Number(heightFt)||0, Number(heightIn)||0) : Number(height);
+                const previewW = inputToKg(Number(weight), lang);
+                const m = calcMacros({ weight: previewW, height: previewH, age: Number(age), sex, goal, activity });
                 return m
                   ? <><Text style={{ color: C.text, fontWeight: '700', fontSize: 18 }}>{m.calories} kcal / {tr('today').toLowerCase()}</Text><Text style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>P: {m.protein}g  ·  C: {m.carbs}g  ·  F: {m.fats}g</Text></>
                   : <Text style={{ color: C.dim, fontSize: 12 }}>{tr('setup_fillBody')}</Text>;
@@ -1283,7 +1321,7 @@ function TodayTab({ profile, macros, today, onAddWater, onResetWater, streak, la
       </View>
       <Card>
         <Text style={{ color: C.cyan, fontSize: 11, letterSpacing: 1, marginBottom: 12 }}>{tr('hydration')}</Text>
-        <WaterGlass current={today.water_ml} target={profile.water_target || 2500} onAdd={onAddWater} onReset={onResetWater} />
+        <WaterGlass current={today.water_ml} target={profile.water_target || 2500} onAdd={onAddWater} onReset={onResetWater} lang={lang} />
       </Card>
       {macros && (
         <Card>
@@ -1350,7 +1388,7 @@ function LogTab({ today, onAddFood, onRemoveFood, lang }) {
       p:    Math.max(0, Number(cP)   || 0),
       c:    Math.max(0, Number(cC)   || 0),
       f:    Math.max(0, Number(cF)   || 0),
-      unit: cWeight ? `${cWeight}g` : 'serving',
+      unit: cWeight ? `${cWeight}${lang === 'en' ? 'oz' : 'g'}` : 'serving',
       meal,
       logId: Date.now().toString(),
     });
@@ -1546,7 +1584,7 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
         })}
       </View>
       <View style={{ flexDirection: 'row', gap: isDesktop ? 12 : 8, marginBottom: isDesktop ? 16 : 8 }}>
-        {[{ label: tr('exercises'), value: today.exercises.length, color: C.purple }, { label: tr('totalSets'), value: totalSets, color: C.cyan }, { label: tr('volumeKg'), value: totalVol, color: C.amber }, ...(totalKm > 0 ? [{ label: tr('totalKm'), value: totalKm % 1 === 0 ? totalKm : totalKm.toFixed(1), color: C.cyan }] : [])].map(s => (
+        {[{ label: tr('exercises'), value: today.exercises.length, color: C.purple }, { label: tr('totalSets'), value: totalSets, color: C.cyan }, { label: tr('volumeLabel'), value: Math.round(isImperial(lang) ? totalVol * 2.20462 : totalVol), color: C.amber }, ...(totalKm > 0 ? [{ label: tr('totalDistLabel'), value: (() => { const d = kmToDisplay(totalKm, lang); return d % 1 === 0 ? d : d.toFixed(1); })(), color: C.cyan }] : [])].map(s => (
           <Card key={s.label} style={{ flex: 1, marginBottom: 0, padding: isDesktop ? 12 : 6, alignItems: 'center' }}>
             <Text style={{ color: s.color, fontWeight: '800', fontSize: isDesktop ? 22 : 15 }}>{s.value}</Text>
             <Text style={{ color: C.muted, fontSize: isDesktop ? 10 : 9, marginTop: 1 }}>{s.label}</Text>
@@ -1625,20 +1663,22 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
                   <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>{si + 1}</Text>
                 </View>
                 {isCardio(ex) ? <>
-                  <TextInput style={[styles.input, { width: isDesktop ? undefined : 58, flex: isDesktop ? 1 : undefined, paddingVertical: 6, fontSize: 12, textAlign: 'center' }]} placeholder={isDistCardio(ex) ? 'km' : 'min'} placeholderTextColor={C.dim} keyboardType="decimal-pad" value={isDistCardio(ex) ? editInputs.km : editInputs.min} onChangeText={v => setEditInputs(p => isDistCardio(ex) ? ({ ...p, km: v }) : ({ ...p, min: v }))} />
+                  <TextInput style={[styles.input, { width: isDesktop ? undefined : 58, flex: isDesktop ? 1 : undefined, paddingVertical: 6, fontSize: 12, textAlign: 'center' }]} placeholder={isDistCardio(ex) ? distUnit(lang) : 'min'} placeholderTextColor={C.dim} keyboardType="decimal-pad" value={isDistCardio(ex) ? editInputs.km : editInputs.min} onChangeText={v => setEditInputs(p => isDistCardio(ex) ? ({ ...p, km: v }) : ({ ...p, min: v }))} />
                   <TextInput style={[styles.input, { width: isDesktop ? undefined : 58, flex: isDesktop ? 1 : undefined, paddingVertical: 6, fontSize: 12, textAlign: 'center' }]} placeholder={isDistCardio(ex) ? 'min' : 'rounds'} placeholderTextColor={C.dim} keyboardType="decimal-pad" value={isDistCardio(ex) ? editInputs.min : editInputs.rounds} onChangeText={v => setEditInputs(p => isDistCardio(ex) ? ({ ...p, min: v }) : ({ ...p, rounds: v }))} />
                 </> : <>
-                  <TextInput style={[styles.input, { width: isDesktop ? undefined : 58, flex: isDesktop ? 1 : undefined, paddingVertical: 6, fontSize: 12, textAlign: 'center' }]} placeholder="kg" placeholderTextColor={C.dim} keyboardType="number-pad" value={editInputs.weight} onChangeText={v => setEditInputs(p => ({ ...p, weight: v }))} />
+                  <TextInput style={[styles.input, { width: isDesktop ? undefined : 58, flex: isDesktop ? 1 : undefined, paddingVertical: 6, fontSize: 12, textAlign: 'center' }]} placeholder={weightUnit(lang)} placeholderTextColor={C.dim} keyboardType="number-pad" value={editInputs.weight} onChangeText={v => setEditInputs(p => ({ ...p, weight: v }))} />
                   <TextInput style={[styles.input, { width: isDesktop ? undefined : 58, flex: isDesktop ? 1 : undefined, paddingVertical: 6, fontSize: 12, textAlign: 'center' }]} placeholder="reps" placeholderTextColor={C.dim} keyboardType="number-pad" value={editInputs.reps} onChangeText={v => setEditInputs(p => ({ ...p, reps: v }))} />
                 </>}
                 <TouchableOpacity onPress={() => {
                   if (isCardio(ex)) {
-                    const km     = Number(editInputs.km)     || 0;
+                    const rawDist = Number(editInputs.km) || 0;
+                    const km     = isDistCardio(ex) ? inputToKm(rawDist, lang) : 0;
                     const min    = Number(editInputs.min)    || 0;
                     const rounds = Number(editInputs.rounds) || 0;
                     onEditSet(ei, si, isDistCardio(ex) ? { km, min } : { min, rounds });
                   } else {
-                    const w = Math.min(1000, Math.max(0, Number(editInputs.weight)||0));
+                    const rawW = Number(editInputs.weight) || 0;
+                    const w = Math.min(1000, Math.max(0, inputToKg(rawW, lang)));
                     const r = Math.min(9999, Math.max(0, Math.round(Number(editInputs.reps)||0)));
                     onEditSet(ei, si, { weight: w, reps: r });
                   }
@@ -1656,15 +1696,15 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
                   <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{si + 1}</Text>
                 </View>
                 <Text style={{ color: C.text, fontSize: isDesktop ? 13 : 12, flex: 1 }}>
-                  {isCardio(ex) ? fmtCardioSet(set, ex) : (set.weight > 0 ? `${set.weight}kg` : '—') + `  ×  ${set.reps} reps`}
+                  {isCardio(ex) ? fmtCardioSet(set, ex, lang) : (set.weight > 0 ? `${kgToDisplay(set.weight, lang)}${weightUnit(lang)}` : '—') + `  ×  ${set.reps} reps`}
                 </Text>
                 {!today.completed && <>
                 <TouchableOpacity onPress={() => {
                   setEditingSet({ exIndex: ei, setIndex: si });
                   if (isCardio(ex)) {
-                    setEditInputs({ weight: '', reps: '', km: String(set.km ?? ''), min: String(set.min ?? ''), rounds: String(set.rounds ?? '') });
+                    setEditInputs({ weight: '', reps: '', km: String(set.km ? kmToDisplay(set.km, lang) : ''), min: String(set.min ?? ''), rounds: String(set.rounds ?? '') });
                   } else {
-                    setEditInputs({ weight: String(set.weight || ''), reps: String(set.reps || ''), km: '', min: '', rounds: '' });
+                    setEditInputs({ weight: String(set.weight ? kgToDisplay(set.weight, lang) : ''), reps: String(set.reps || ''), km: '', min: '', rounds: '' });
                   }
                 }} style={{ paddingHorizontal: 6 }}>
                   <Text style={{ color: C.amber, fontSize: 13 }}>✏</Text>
@@ -1679,21 +1719,23 @@ function TrainTab({ today, onLogSet, onAddExercise, onFinishWorkout, onDeleteExe
           {!today.completed && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: isDesktop ? 8 : 6 }}>
             {isCardio(ex) ? <>
-              <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder={isDistCardio(ex) ? 'km' : 'min'} placeholderTextColor={C.dim} keyboardType="decimal-pad" value={isDistCardio(ex) ? (setInputs[ex.id]?.km||'') : (setInputs[ex.id]?.min||'')} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], ...(isDistCardio(ex) ? { km: v } : { min: v }) } }))} />
+              <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder={isDistCardio(ex) ? distUnit(lang) : 'min'} placeholderTextColor={C.dim} keyboardType="decimal-pad" value={isDistCardio(ex) ? (setInputs[ex.id]?.km||'') : (setInputs[ex.id]?.min||'')} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], ...(isDistCardio(ex) ? { km: v } : { min: v }) } }))} />
               <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder={isDistCardio(ex) ? 'min' : 'rounds'} placeholderTextColor={C.dim} keyboardType="decimal-pad" value={isDistCardio(ex) ? (setInputs[ex.id]?.min||'') : (setInputs[ex.id]?.rounds||'')} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], ...(isDistCardio(ex) ? { min: v } : { rounds: v }) } }))} />
             </> : <>
-              <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder="kg" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.weight||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], weight: v } }))} />
+              <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder={weightUnit(lang)} placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.weight||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], weight: v } }))} />
               <TextInput style={[styles.input, { width: isDesktop ? undefined : 60, flex: isDesktop ? 1 : undefined, paddingVertical: isDesktop ? 8 : 6, fontSize: isDesktop ? 14 : 13, textAlign: 'center' }]} placeholder="reps" placeholderTextColor={C.dim} keyboardType="number-pad" value={setInputs[ex.id]?.reps||''} onChangeText={v => setSetInputs(p => ({ ...p, [ex.id]: { ...p[ex.id], reps: v } }))} />
             </>}
             <TouchableOpacity onPress={() => {
               const inp = setInputs[ex.id] || {};
               if (isCardio(ex)) {
-                const km     = Number(inp.km)     || 0;
+                const rawDist = Number(inp.km) || 0;
+                const km     = isDistCardio(ex) ? inputToKm(rawDist, lang) : 0;
                 const min    = Number(inp.min)    || 0;
                 const rounds = Number(inp.rounds) || 0;
                 onLogSet(ei, isDistCardio(ex) ? { km, min } : { min, rounds });
               } else {
-                const w = Math.min(1000, Math.max(0, Number(inp.weight)||0));
+                const rawW = Number(inp.weight) || 0;
+                const w = Math.min(1000, Math.max(0, inputToKg(rawW, lang)));
                 const r = Math.min(9999, Math.max(0, Math.round(Number(inp.reps)||0)));
                 onLogSet(ei, { weight: w, reps: r });
               }
@@ -1720,13 +1762,19 @@ function MeTab({ profile, macros, weights, onAddWeight, onLogout, onEditProfile,
   const [saving,        setSaving]        = useState(false);
   const [showSettings,  setShowSettings]  = useState(false);
   const goalObj = GOALS.find(g => g.id === profile.goal);
+  const wUnit = weightUnit(lang);
+  const wRange = bodyWeightRange(lang);
   const handleAddWeight = async () => {
     if (!weightInput) return;
-    const kg = Number(weightInput);
-    if (isNaN(kg) || kg < 10 || kg > 500) {
-      if (Platform.OS === 'web') { window.alert('Enter a valid weight between 10 and 500 kg.'); } else { Alert.alert('Invalid weight', 'Enter a value between 10 and 500 kg.'); }
+    const val = Number(weightInput);
+    if (isNaN(val) || val < wRange.min || val > wRange.max) {
+      const msg = lang === 'es'
+        ? `Ingresa un peso válido entre ${wRange.min} y ${wRange.max} ${wUnit}.`
+        : `Enter a valid weight between ${wRange.min} and ${wRange.max} ${wUnit}.`;
+      if (Platform.OS === 'web') { window.alert(msg); } else { Alert.alert(lang === 'es' ? 'Peso inválido' : 'Invalid weight', msg); }
       return;
     }
+    const kg = inputToKg(val, lang);
     setSaving(true);
     await onAddWeight(kg);
     setWeightInput('');
@@ -1750,10 +1798,10 @@ function MeTab({ profile, macros, weights, onAddWeight, onLogout, onEditProfile,
       </View>
       <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
         {[
-          { label: 'Weight',   value: `${profile.weight_kg ?? '—'}kg`,    icon: '⚖' },
-          { label: 'Height',   value: `${profile.height_cm ?? '—'}cm`,    icon: '↕' },
-          { label: 'Age',      value: `${profile.age ?? '—'}y`,           icon: '◌' },
-          { label: 'Body fat', value: profile.body_fat_pct ? `${profile.body_fat_pct}%` : '—', icon: '%' },
+          { label: lang === 'es' ? 'Peso' : 'Weight',   value: profile.weight_kg ? fmtWeight(profile.weight_kg, lang) : '—', icon: '⚖' },
+          { label: lang === 'es' ? 'Altura' : 'Height', value: fmtHeight(profile.height_cm, lang), icon: '↕' },
+          { label: lang === 'es' ? 'Edad' : 'Age',      value: `${profile.age ?? '—'}${lang === 'es' ? 'a' : 'y'}`, icon: '◌' },
+          { label: lang === 'es' ? 'Grasa' : 'Body fat', value: profile.body_fat_pct ? `${profile.body_fat_pct}%` : '—', icon: '%' },
         ].map(s => (
           <Card key={s.label} style={{ flex: 1, marginBottom: 0, padding: 10, alignItems: 'center' }}>
             <Text style={{ color: C.purple, fontSize: 16 }}>{s.icon}</Text>
@@ -1778,12 +1826,12 @@ function MeTab({ profile, macros, weights, onAddWeight, onLogout, onEditProfile,
       )}
       <Card>
         <Text style={{ color: C.muted, fontSize: 11, letterSpacing: 1, marginBottom: 12 }}>{tr('weightHistory')}</Text>
-        <WeightChart weights={weights} />
+        <WeightChart weights={weights} lang={lang} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14 }}>
           <TextInput style={[styles.input, { flex: 1, paddingVertical: 9 }]} value={weightInput} onChangeText={setWeightInput} keyboardType="decimal-pad" placeholder={tr('weightPlaceholder')} placeholderTextColor={C.dim} />
           <Btn label={tr('logWeight')} onPress={handleAddWeight} loading={saving} style={{ paddingHorizontal: 20, paddingVertical: 9 }} />
         </View>
-        {weights.length > 0 && <Text style={{ color: C.muted, fontSize: 11, marginTop: 8 }}>Last: {weights[weights.length-1]?.weight_kg}kg on {weights[weights.length-1]?.logged_at}</Text>}
+        {weights.length > 0 && <Text style={{ color: C.muted, fontSize: 11, marginTop: 8 }}>{lang === 'es' ? 'Último' : 'Last'}: {fmtWeight(weights[weights.length-1]?.weight_kg, lang)} — {weights[weights.length-1]?.logged_at}</Text>}
       </Card>
       <View style={{ gap: 10 }}>
         <Btn label={tr('settings')} onPress={() => setShowSettings(true)} variant="secondary" />
@@ -1923,9 +1971,9 @@ function HistoryTab({ logs, workouts, loading, lang }) {
           <Text style={{ color: C.cyan, fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 12 }}>💧 HYDRATION</Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             {[
-              { label: 'Today',       value: `${todayWater} ml` },
-              { label: 'Weekly avg',  value: `${weekAvg} ml` },
-              { label: 'Monthly avg', value: `${monthAvg} ml` },
+              { label: lang === 'es' ? 'Hoy' : 'Today',           value: fmtWater(todayWater, lang) },
+              { label: lang === 'es' ? 'Prom. semanal' : 'Weekly avg',  value: fmtWater(weekAvg, lang) },
+              { label: lang === 'es' ? 'Prom. mensual' : 'Monthly avg', value: fmtWater(monthAvg, lang) },
             ].map(s => (
               <View key={s.label} style={{ flex: 1, backgroundColor: C.elevated, borderRadius: 10, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: C.border }}>
                 <Text style={{ color: C.text, fontWeight: '700', fontSize: 15 }}>{s.value}</Text>
@@ -2057,7 +2105,7 @@ function HistoryTab({ logs, workouts, loading, lang }) {
                   {[
                     { label: 'Calories', value: `${(selLog.food_log||[]).reduce((s,f)=>s+(f.cal||0),0)}`, unit: 'kcal', color: C.purple },
                     { label: 'Protein',  value: `${Math.round((selLog.food_log||[]).reduce((s,f)=>s+(f.p||0),0))}`,   unit: 'g',    color: C.cyan   },
-                    { label: 'Water',    value: `${selLog.water_ml||0}`, unit: 'ml',   color: C.cyan   },
+                    { label: lang === 'es' ? 'Agua' : 'Water', value: `${mlToDisplay(selLog.water_ml||0, lang)}`, unit: waterUnit(lang), color: C.cyan },
                   ].map(s => (
                     <View key={s.label} style={{ flex: 1, backgroundColor: C.elevated, borderRadius: 10, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: C.border }}>
                       <Text style={{ color: s.color, fontWeight: '800', fontSize: 16 }}>{s.value}</Text>
@@ -2630,7 +2678,7 @@ export default function App() {
             {tab === 'TRAIN' && <TrainTab today={workout} onLogSet={handleLogSet} onAddExercise={handleAddExercise} onFinishWorkout={handleFinishWorkout} onDeleteExercise={handleDeleteExercise} onDeleteSet={handleDeleteSet} onEditSet={handleEditSet} streak={streak} lang={lang} />}
             {tab === 'HIST'  && <HistoryTab logs={historyLogs} workouts={historyWorkouts} loading={loadingHistory} lang={lang} />}
             {tab === 'ME'    && <MeTab profile={profile} macros={macros} weights={weights} onAddWeight={handleAddWeight} onLogout={handleLogout} onEditProfile={() => setScreen(SCREENS.SETUP)} lang={lang} onChangeLang={handleChangeLang} user={user} />}
-            {tab === 'ORBIT' && <OrbitScreen user={user} streak={streak} todayWorkout={workout} />}
+            {tab === 'ORBIT' && <OrbitScreen user={user} streak={streak} todayWorkout={workout} lang={lang} />}
           </View>
           {!isDesktop && <TabBar active={tab} onPress={setTab} onCoach={() => setCoachVisible(true)} lang={lang} />}
           <CoachModal visible={coachVisible} onClose={() => setCoachVisible(false)} macros={macros} lang={lang} />
