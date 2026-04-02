@@ -96,6 +96,18 @@ CREATE OR REPLACE VIEW public.profile_lookup AS
   SELECT id, username, pulse_id
   FROM profiles;
 
+-- ─── FIX: get_email_by_username — case-insensitive + search_path ──────────
+
+CREATE OR REPLACE FUNCTION public.get_email_by_username(lookup_username TEXT)
+RETURNS TEXT
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+SET search_path = public
+AS $$
+  SELECT email FROM public.profiles WHERE lower(username) = lower(lookup_username) LIMIT 1;
+$$;
+
 -- ─── M4: check_rate_limit — fix SECURITY DEFINER search_path ─────────────
 
 CREATE OR REPLACE FUNCTION check_rate_limit(
