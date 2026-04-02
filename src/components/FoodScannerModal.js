@@ -26,6 +26,8 @@ import { parseIngredients } from '../scanner/ingredientParser';
 import { estimatePortion, PORTION_SIZES } from '../scanner/portionEstimator';
 import { estimateSmartPortion, formatPortionEstimate } from '../scanner/smartPortionEstimator';
 import { classifyFoodType } from '../scanner/foodTypeClassifier';
+import { filterByConfidence, composeDish } from '../scanner/dishComposer';
+import { estimateWeights } from '../scanner/weightEstimator';
 import { smartSegmentFood } from '../scanner/smartSegmentFood';
 import { calculateNutrition, getMacroPercentages } from '../nutrition/calculateNutrition';
 import { recordCorrection, applyMemory, lookupCorrection } from '../ai/mealMemory';
@@ -151,6 +153,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
   const [portionId,     setPortionId]     = useState('medium');
   const [portionMl,     setPortionMl]     = useState(350);
   const [foodType,      setFoodType]      = useState('liquid');
+  const [dishInfo,      setDishInfo]      = useState(null);
   const [smartEstimate, setSmartEstimate] = useState(null);   // PortionEstimate from smart estimator
   const [segmentation,  setSegmentation]  = useState(null);   // SegmentationResult from smart segmenter
 
@@ -195,6 +198,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
     setPortionId('medium');
     setPortionMl(350);
     setFoodType('liquid');
+    setDishInfo(null);
     setSmartEstimate(null);
     setSegmentation(null);
     setError('');
@@ -340,7 +344,10 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
       setSelections(normalized.foods.map(() => ({ amount: defaultAmt, unit: defaultUnit, selected: true })));
 
       // V2: Run segmentation → ingredients → portion estimation → predictions
-      const detected = segmentFood(normalized);
+      const rawDetected = segmentFood(normalized);
+
+      // V2.5: Filter out low-confidence detections (< 0.55)
+      const detected = filterByConfidence(rawDetected);
 
       // V3: Enhanced smart segmentation for multi-component detection
       const smartSeg = smartSegmentFood(normalized);
@@ -380,6 +387,29 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
           }
         }
       }
+      // Compose dish from detected ingredients
+      const composition = composeDish(detected);
+      setDishInfo(composition);
+
+      // Estimate weights from visual serving sizes
+      const container = detected.find(d => d.container)?.container ?? null;
+      const onPlate = container === 'plate';
+      const weights = estimateWeights(parsed, onPlate);
+
+      // Apply weight estimates to ingredients (prefer smart segmentation, then weight estimator)
+      for (let i = 0; i < parsed.length; i++) {
+        const weightEst = weights[i];
+        if (weightEst && parsed[i].unit === 'g') {
+          // Only override if no smart segmentation override was already applied
+          const hasSmartOverride = smartSeg.components.some(
+            c => c.label.toLowerCase() === parsed[i].name.toLowerCase()
+          );
+          if (!hasSmartOverride) {
+            parsed[i].defaultQty = weightEst.estimatedGrams;
+          }
+        }
+      }
+
       setIngredients(parsed);
 
       // Classify food type from parsed ingredients
@@ -391,7 +421,6 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
       setSmartEstimate(smartEst);
 
       // Use smart estimate to drive portion selection
-      const container = detected.find(d => d.container)?.container ?? null;
       const portion = estimatePortion(container, parsed, detectedFoodType);
 
       // Prefer smart estimate when it has reasonable confidence
@@ -461,6 +490,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
         enabledIngredients.map(ing => ({ ingredient: ing, quantity: ing.defaultQty }))
       );
       const mealName = predictions[activePredIdx]?.name
+        ?? (dishInfo && lang === 'es' ? dishInfo.dishEs : dishInfo?.dish)
         ?? enabledIngredients.map(i => i.name).join(' + ');
 
       onAddFood({
@@ -628,6 +658,18 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
                   ? (lang === 'es' ? '1 alimento detectado' : '1 food detected')
                   : (lang === 'es' ? `${result.foods.length} alimentos detectados` : `${result.foods.length} foods detected`)}
               </Text>
+
+              {/* 1.5 DISH COMPOSITION */}
+              {dishInfo && (
+                <View style={styles.dishBox}>
+                  <Text style={styles.dishLabel}>
+                    {lang === 'es' ? 'Plato detectado' : 'Detected Dish'}
+                  </Text>
+                  <Text style={styles.dishName}>
+                    {lang === 'es' ? dishInfo.dishEs : dishInfo.dish}
+                  </Text>
+                </View>
+              )}
 
               {result.foods.map((food, i) => {
                 const sel = selections[i] ?? { amount: lang === 'en' ? '4' : '100', unit: lang === 'en' ? 'oz' : 'g', selected: true };
@@ -817,6 +859,11 @@ const styles = StyleSheet.create({
   segmentLabel:     { color: C.text, fontSize: 13, fontWeight: '600', flex: 1 },
   segmentGrams:     { color: C.muted, fontSize: 12 },
   segmentInferred:  { color: C.amber, fontSize: 10, fontStyle: 'italic' },
+  dishBox:          { backgroundColor: 'rgba(16,185,129,0.08)', borderRadius: 12,
+                      padding: 12, borderWidth: 1, borderColor: 'rgba(16,185,129,0.25)', marginBottom: 4 },
+  dishLabel:        { color: C.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase',
+                      letterSpacing: 0.5, marginBottom: 2 },
+  dishName:         { color: C.green, fontSize: 16, fontWeight: '700' },
   smartEstimateBox: { backgroundColor: 'rgba(139,92,246,0.08)', borderRadius: 12,
                       padding: 12, borderWidth: 1, borderColor: 'rgba(139,92,246,0.25)' },
   smartEstimateText: { color: C.purple, fontSize: 14, fontWeight: '700' },
