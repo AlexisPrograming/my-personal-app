@@ -99,12 +99,12 @@ function inferSize(objects: DetectedObject[], container: ContainerType): Portion
  * @param detectedObjects — objects detected by the food scanner
  * @returns PortionEstimate with container, volume, size, and confidence
  */
-export function estimateSmartPortion(detectedObjects: DetectedObject[]): PortionEstimate {
+export function estimateSmartPortion(detectedObjects: DetectedObject[], foodType: 'liquid' | 'solid' | 'mixed' = 'liquid'): PortionEstimate {
   if (!detectedObjects || detectedObjects.length === 0) {
     return {
       container: 'unknown',
-      estimatedVolume: 350,
-      unit: 'ml',
+      estimatedVolume: foodType === 'liquid' ? 350 : 300,
+      unit: foodType === 'liquid' ? 'ml' : 'g',
       suggestedSize: 'medium',
       confidence: 0,
     };
@@ -153,9 +153,14 @@ export function estimateSmartPortion(detectedObjects: DetectedObject[]): Portion
     estimatedVolume = sizes[suggestedSize];
     unit = sizes.unit;
   } else {
-    // Unknown container: use cup medium defaults
-    estimatedVolume = 350;
-    unit = 'ml';
+    // Unknown container: use food type to pick defaults
+    if (foodType === 'liquid') {
+      estimatedVolume = 350;
+      unit = 'ml';
+    } else {
+      estimatedVolume = 300;
+      unit = 'g';
+    }
   }
 
   // Step 5: Calculate overall confidence

@@ -23,8 +23,8 @@ const C = {
 };
 
 const T = {
-  en: { portion: 'Portion Size', custom: 'Custom', ml: 'ml' },
-  es: { portion: 'Tamaño de Porción', custom: 'Custom', ml: 'ml' },
+  en: { portion: 'Portion Size', custom: 'Custom' },
+  es: { portion: 'Tamaño de Porción', custom: 'Custom' },
 };
 
 /**
@@ -34,18 +34,22 @@ const T = {
  * @param {Function} props.onSelect — (portionId, ml) => void
  * @param {string} props.lang
  */
-export default function PortionSelector({ selectedId, customMl, onSelect, lang = 'es' }) {
+export default function PortionSelector({ selectedId, customMl, onSelect, lang = 'es', foodType = 'liquid' }) {
   const tr = T[lang] ?? T.es;
   const [showCustom, setShowCustom] = useState(selectedId === 'custom');
 
+  const isLiquid = foodType === 'liquid';
+  const unitLabel = isLiquid ? 'ml' : 'g';
+
   const handlePreset = (portion) => {
     setShowCustom(false);
-    onSelect(portion.id, portion.ml);
+    const value = isLiquid ? portion.ml : portion.grams;
+    onSelect(portion.id, value);
   };
 
   const handleCustom = () => {
     setShowCustom(true);
-    onSelect('custom', customMl || 350);
+    onSelect('custom', customMl || (isLiquid ? 350 : 300));
   };
 
   return (
@@ -56,6 +60,7 @@ export default function PortionSelector({ selectedId, customMl, onSelect, lang =
         {PORTION_SIZES.map(p => {
           const active = selectedId === p.id;
           const label = lang === 'es' ? p.labelEs : p.label;
+          const displayValue = isLiquid ? p.ml : p.grams;
           return (
             <TouchableOpacity
               key={p.id}
@@ -66,7 +71,7 @@ export default function PortionSelector({ selectedId, customMl, onSelect, lang =
                 {label}
               </Text>
               <Text style={[styles.optionMl, active && { color: C.text }]}>
-                {p.ml}{tr.ml}
+                {displayValue} {unitLabel}
               </Text>
             </TouchableOpacity>
           );
@@ -92,7 +97,7 @@ export default function PortionSelector({ selectedId, customMl, onSelect, lang =
                 keyboardType="number-pad"
                 selectTextOnFocus
               />
-              <Text style={{ color: C.muted, fontSize: 11 }}>{tr.ml}</Text>
+              <Text style={{ color: C.muted, fontSize: 11 }}>{unitLabel}</Text>
             </View>
           ) : (
             <Text style={styles.optionMl}>...</Text>

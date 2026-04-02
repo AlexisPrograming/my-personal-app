@@ -15,9 +15,9 @@
  */
 
 export const PORTION_SIZES = [
-  { id: 'small',  label: 'Small',  labelEs: 'Pequeño', ml: 250, grams: 200 },
+  { id: 'small',  label: 'Small',  labelEs: 'Pequeño', ml: 250, grams: 150 },
   { id: 'medium', label: 'Medium', labelEs: 'Mediano', ml: 350, grams: 300 },
-  { id: 'large',  label: 'Large',  labelEs: 'Grande',  ml: 500, grams: 450 },
+  { id: 'large',  label: 'Large',  labelEs: 'Grande',  ml: 500, grams: 500 },
 ];
 
 // Default container volumes in ml
@@ -44,35 +44,42 @@ const DENSITY = {
 };
 
 /**
- * Estimate portion size based on detected container and ingredients.
+ * Estimate portion size based on detected container, ingredients, and food type.
  *
  * @param {string|null} container — detected container type (from segmentFood)
  * @param {import('./ingredientParser').ParsedIngredient[]} ingredients
- * @returns {{ portionId: string, totalMl: number, scaleFactor: number }}
+ * @param {'liquid'|'solid'|'mixed'} [foodType='liquid'] — classified food type
+ * @returns {{ portionId: string, totalMl: number, totalGrams: number, scaleFactor: number, foodType: string }}
  */
-export function estimatePortion(container, ingredients = []) {
-  // Determine base volume from container
+export function estimatePortion(container, ingredients = [], foodType = 'liquid') {
+  const usesVolume = foodType === 'liquid';
+
+  // Determine base value from container
   let baseMl = CONTAINER_VOLUMES[container] ?? 350; // default medium
 
   // Find the closest standard portion
   let closestPortion = PORTION_SIZES[1]; // default medium
   let minDiff = Infinity;
   for (const p of PORTION_SIZES) {
-    const diff = Math.abs(p.ml - baseMl);
+    const ref = usesVolume ? p.ml : p.grams;
+    const diff = Math.abs(ref - (usesVolume ? baseMl : p.grams));
     if (diff < minDiff) {
       minDiff = diff;
       closestPortion = p;
     }
   }
 
-  // Scale factor: how much of a "100g/100ml serving" does this portion represent
-  // For a 350ml drink, if an ingredient's default is 150ml, scale = 350/150 = 2.33
-  const scaleFactor = baseMl / 100;
+  const totalGrams = closestPortion.grams;
+  const totalMl = closestPortion.ml;
+  const baseValue = usesVolume ? totalMl : totalGrams;
+  const scaleFactor = baseValue / 100;
 
   return {
     portionId:   closestPortion.id,
-    totalMl:     baseMl,
+    totalMl,
+    totalGrams,
     scaleFactor,
+    foodType,
   };
 }
 
@@ -103,11 +110,15 @@ export function getIngredientScale(ingredient, portionMl, customQty) {
  *
  * @param {string} portionId
  * @param {string} lang — 'en' | 'es'
+ * @param {'liquid'|'solid'|'mixed'} [foodType='liquid']
  * @returns {string}
  */
-export function getPortionLabel(portionId, lang = 'en') {
+export function getPortionLabel(portionId, lang = 'en', foodType = 'liquid') {
   const p = PORTION_SIZES.find(s => s.id === portionId);
   if (!p) return `${portionId}`;
   const label = lang === 'es' ? p.labelEs : p.label;
-  return `${label} (${p.ml}ml)`;
+  if (foodType === 'liquid') {
+    return `${label} (${p.ml} ml)`;
+  }
+  return `${label} (${p.grams} g)`;
 }

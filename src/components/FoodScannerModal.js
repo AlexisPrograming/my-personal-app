@@ -25,6 +25,7 @@ import { segmentFood, generatePredictions } from '../scanner/segmentFood';
 import { parseIngredients } from '../scanner/ingredientParser';
 import { estimatePortion, PORTION_SIZES } from '../scanner/portionEstimator';
 import { estimateSmartPortion, formatPortionEstimate } from '../scanner/smartPortionEstimator';
+import { classifyFoodType } from '../scanner/foodTypeClassifier';
 import { smartSegmentFood } from '../scanner/smartSegmentFood';
 import { calculateNutrition, getMacroPercentages } from '../nutrition/calculateNutrition';
 import { recordCorrection, applyMemory, lookupCorrection } from '../ai/mealMemory';
@@ -149,6 +150,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
   const [activePredIdx, setActivePredIdx] = useState(0);     // which prediction is active
   const [portionId,     setPortionId]     = useState('medium');
   const [portionMl,     setPortionMl]     = useState(350);
+  const [foodType,      setFoodType]      = useState('liquid');
   const [smartEstimate, setSmartEstimate] = useState(null);   // PortionEstimate from smart estimator
   const [segmentation,  setSegmentation]  = useState(null);   // SegmentationResult from smart segmenter
 
@@ -192,6 +194,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
     setActivePredIdx(0);
     setPortionId('medium');
     setPortionMl(350);
+    setFoodType('liquid');
     setSmartEstimate(null);
     setSegmentation(null);
     setError('');
@@ -379,29 +382,36 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
       }
       setIngredients(parsed);
 
+      // Classify food type from parsed ingredients
+      const { type: detectedFoodType } = classifyFoodType(parsed);
+      setFoodType(detectedFoodType);
+
       // Smart portion estimation from detected objects
-      const smartEst = estimateSmartPortion(detected);
+      const smartEst = estimateSmartPortion(detected, detectedFoodType);
       setSmartEstimate(smartEst);
 
       // Use smart estimate to drive portion selection
       const container = detected.find(d => d.container)?.container ?? null;
-      const portion = estimatePortion(container, parsed);
+      const portion = estimatePortion(container, parsed, detectedFoodType);
 
       // Prefer smart estimate when it has reasonable confidence
       const useSmartVolume = smartEst.confidence > 0.3;
       const effectivePortionId = useSmartVolume ? smartEst.suggestedSize : portion.portionId;
-      const effectiveMl = useSmartVolume ? smartEst.estimatedVolume : portion.totalMl;
+      const effectiveValue = useSmartVolume
+        ? smartEst.estimatedVolume
+        : (detectedFoodType === 'liquid' ? portion.totalMl : portion.totalGrams);
 
       setPortionId(effectivePortionId);
-      setPortionMl(effectiveMl);
+      setPortionMl(effectiveValue);
 
       // Scale ingredient quantities based on estimated portion
       const portionData = PORTION_SIZES.find(p => p.id === effectivePortionId);
       if (portionData) {
+        const baseRef = detectedFoodType === 'liquid' ? 350 : 300;
         setIngredients(prev => prev.map(ing => ({
           ...ing,
           defaultQty: ing.unit === 'ml'
-            ? Math.round(effectiveMl * (ing.defaultQty / 350))
+            ? Math.round(effectiveValue * (ing.defaultQty / baseRef))
             : ing.defaultQty,
         })));
       }
@@ -460,7 +470,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
         p:     nutrition.protein,
         c:     nutrition.carbs,
         f:     nutrition.fat,
-        unit:  `${portionMl}ml`,
+        unit:  `${portionMl}${foodType === 'liquid' ? 'ml' : 'g'}`,
         meal,
         logId: String(now),
       });
@@ -699,6 +709,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
                 customMl={portionMl}
                 onSelect={handlePortionSelect}
                 lang={lang}
+                foodType={foodType}
               />
 
               {/* 5. LIVE NUTRITION PREVIEW */}
