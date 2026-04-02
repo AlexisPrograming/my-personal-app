@@ -28,6 +28,9 @@ import { estimateSmartPortion, formatPortionEstimate } from '../scanner/smartPor
 import { classifyFoodType } from '../scanner/foodTypeClassifier';
 import { filterByConfidence, composeDish } from '../scanner/dishComposer';
 import { estimateWeights } from '../scanner/weightEstimator';
+import { detectPlate } from '../scanner/plateDetector';
+import { estimateFoodCoverage } from '../scanner/foodAreaEstimator';
+import { calculatePortionMultiplier } from '../scanner/portionMultiplier';
 import { smartSegmentFood } from '../scanner/smartSegmentFood';
 import { calculateNutrition, getMacroPercentages } from '../nutrition/calculateNutrition';
 import { recordCorrection, applyMemory, lookupCorrection } from '../ai/mealMemory';
@@ -154,6 +157,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
   const [portionMl,     setPortionMl]     = useState(350);
   const [foodType,      setFoodType]      = useState('liquid');
   const [dishInfo,      setDishInfo]      = useState(null);
+  const [plateInfo,     setPlateInfo]     = useState(null);
   const [smartEstimate, setSmartEstimate] = useState(null);   // PortionEstimate from smart estimator
   const [segmentation,  setSegmentation]  = useState(null);   // SegmentationResult from smart segmenter
 
@@ -199,6 +203,7 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
     setPortionMl(350);
     setFoodType('liquid');
     setDishInfo(null);
+    setPlateInfo(null);
     setSmartEstimate(null);
     setSegmentation(null);
     setError('');
@@ -391,10 +396,16 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
       const composition = composeDish(detected);
       setDishInfo(composition);
 
-      // Estimate weights from visual serving sizes
+      // Plate detection → food coverage → portion multiplier → weight estimation
+      const plate = detectPlate(detected);
+      const coverage = estimateFoodCoverage(detected);
+      const { multiplier } = plate.plateDetected
+        ? calculatePortionMultiplier(plate.plateSize, coverage.foodCoverage)
+        : { multiplier: 1.0 };
+      setPlateInfo({ ...plate, coverage: coverage.foodCoverage, multiplier });
+
       const container = detected.find(d => d.container)?.container ?? null;
-      const onPlate = container === 'plate';
-      const weights = estimateWeights(parsed, onPlate);
+      const weights = estimateWeights(parsed, multiplier);
 
       // Apply weight estimates to ingredients (prefer smart segmentation, then weight estimator)
       for (let i = 0; i < parsed.length; i++) {
@@ -668,6 +679,19 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
                   <Text style={styles.dishName}>
                     {lang === 'es' ? dishInfo.dishEs : dishInfo.dish}
                   </Text>
+                  {plateInfo && plateInfo.plateDetected && (
+                    <View style={styles.plateMetaRow}>
+                      <Text style={styles.plateMeta}>
+                        {lang === 'es' ? 'Plato' : 'Plate'}: {plateInfo.plateSize}
+                      </Text>
+                      <Text style={styles.plateMeta}>
+                        {lang === 'es' ? 'Cobertura' : 'Coverage'}: {Math.round(plateInfo.coverage * 100)}%
+                      </Text>
+                      <Text style={styles.plateMeta}>
+                        {plateInfo.multiplier}x
+                      </Text>
+                    </View>
+                  )}
                 </View>
               )}
 
@@ -864,6 +888,8 @@ const styles = StyleSheet.create({
   dishLabel:        { color: C.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase',
                       letterSpacing: 0.5, marginBottom: 2 },
   dishName:         { color: C.green, fontSize: 16, fontWeight: '700' },
+  plateMetaRow:     { flexDirection: 'row', gap: 12, marginTop: 6 },
+  plateMeta:        { color: C.muted, fontSize: 11 },
   smartEstimateBox: { backgroundColor: 'rgba(139,92,246,0.08)', borderRadius: 12,
                       padding: 12, borderWidth: 1, borderColor: 'rgba(139,92,246,0.25)' },
   smartEstimateText: { color: C.purple, fontSize: 14, fontWeight: '700' },

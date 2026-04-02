@@ -171,8 +171,6 @@ const WEIGHT_DB: Record<string, number> = {
   'refresco':       350,
 };
 
-const PLATE_MULTIPLIER = 1.2;
-
 function lookupWeight(label: string): { grams: number; source: 'db' | 'default' } {
   const lower = label.toLowerCase().trim();
 
@@ -196,17 +194,17 @@ function lookupWeight(label: string): { grams: number; source: 'db' | 'default' 
  * Estimate weights for a list of ingredients.
  *
  * @param ingredients — array with at least a `name` or `label` field
- * @param onPlate — whether food was detected on a plate (applies 20% increase)
+ * @param multiplier — portion multiplier from plate/coverage analysis (default 1.0)
  * @returns Array of weight estimates
  */
 export function estimateWeights(
   ingredients: Array<{ name?: string; label?: string }>,
-  onPlate: boolean = false,
+  multiplier: number = 1.0,
 ): WeightEstimate[] {
   return ingredients.map(ing => {
     const label = ing.name ?? ing.label ?? '';
     const { grams, source } = lookupWeight(label);
-    const finalGrams = onPlate ? Math.round(grams * PLATE_MULTIPLIER) : grams;
+    const finalGrams = Math.round(grams * multiplier);
 
     return {
       label,
