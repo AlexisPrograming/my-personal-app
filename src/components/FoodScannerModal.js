@@ -35,6 +35,7 @@ import { smartSegmentFood } from '../scanner/smartSegmentFood';
 import { calculateNutrition, getMacroPercentages } from '../nutrition/calculateNutrition';
 import { recordCorrection, applyMemory, lookupCorrection } from '../ai/mealMemory';
 import { saveMealCorrection, applySmartMemory } from '../ai/smartMealMemory';
+import { checkRateLimit, showRateLimitAlert, LIMITS } from '../utils/rateLimiter';
 import IngredientEditor from './IngredientEditor';
 import NutritionPreview from './NutritionPreview';
 import PortionSelector from './PortionSelector';
@@ -295,6 +296,14 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
   // ── Scan ────────────────────────────────────────────────────────────────────
   const scan = async () => {
     if (!imageUri) return;
+
+    // Client-side rate limit (mirrors server-side)
+    const rl = checkRateLimit('aiScan', LIMITS.aiScan.maxCalls, LIMITS.aiScan.windowMs);
+    if (!rl.allowed) {
+      showRateLimitAlert(rl.retryAfterMs, lang === 'es' ? 'escanear' : 'scanning');
+      return;
+    }
+
     setError('');
     setStep('scanning');
     setLoadingIdx(0);
@@ -311,7 +320,13 @@ export default function FoodScannerModal({ visible, onClose, onAddFood, meal = '
         return;
       }
 
-      // Step 2: get session token and call Edge Function
+      // Step 2: validate session server-side and call Edge Function
+      const { data: { user: authUser }, error: authErr } = await supabase.auth.getUser();
+      if (authErr || !authUser) {
+        setError(lang === 'es' ? 'Sesión expirada. Vuelve a iniciar sesión.' : 'Session expired. Please log in again.');
+        setStep('preview');
+        return;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         setError(lang === 'es' ? 'Sesión expirada. Vuelve a iniciar sesión.' : 'Session expired. Please log in again.');

@@ -143,7 +143,7 @@ export default function OrbitScreen({ user, streak, todayWorkout, lang = 'en' })
     const rl = checkRateLimit('friend:add', 5, 60_000);
     if (!rl.allowed) return { error: 'Too many attempts. Wait a moment.' };
     const { data: target } = await supabase
-      .from('profiles')
+      .from('profile_lookup')
       .select('id, username')
       .eq('pulse_id', pulseId)
       .maybeSingle();

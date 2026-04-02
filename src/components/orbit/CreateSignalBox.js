@@ -55,7 +55,8 @@ export default function CreateSignalBox({ onSubmit, todayWorkout, lang = 'en' })
       workout_data = { sets: totalSets, reps: totalReps, weight: maxWeight || undefined };
     }
 
-    await onSubmit({ signal_type, text_content: text.trim(), workout_data, is_pr: isPR });
+    const cleanText = text.trim().replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\u200B-\u200F\u2028-\u202F\uFEFF]/g, '');
+    await onSubmit({ signal_type, text_content: cleanText, workout_data, is_pr: isPR });
     setText('');
     setAttachedWorkout(null);
     setIsPR(false);

@@ -45,12 +45,12 @@ export default function AddFriendBox({ onAdd }) {
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <TextInput
           style={inputStyle}
-          placeholder="#PLS-XXXX"
+          placeholder="#PLS-XXXXXX"
           placeholderTextColor={C.dim}
           value={input}
           onChangeText={setInput}
           autoCapitalize="characters"
-          maxLength={9}
+          maxLength={11}
         />
         <TouchableOpacity
           onPress={handleAdd}

@@ -54,12 +54,14 @@ export default function CommentSection({ signalId, userId }) {
   }, [open, signalId]);
 
   const sendComment = async () => {
-    if (!input.trim() || sending) return;
+    // Strip control characters and zero-width chars
+    const clean = input.trim().replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\u200B-\u200F\u2028-\u202F\uFEFF]/g, '');
+    if (!clean || sending) return;
     setSending(true);
     await supabase.from('signal_comments').insert({
       signal_id: signalId,
       author_id: userId,
-      content:   input.trim(),
+      content:   clean,
     });
     setInput('');
     setSending(false);

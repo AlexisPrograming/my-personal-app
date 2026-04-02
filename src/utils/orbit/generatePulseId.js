@@ -4,8 +4,9 @@ const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
 function randomCode() {
   let code = '#PLS-';
+  // 6 chars = 36^6 = ~2.2B combinations (brute-force resistant)
   // Use crypto for unpredictable IDs, 4 chars = 36^4 = ~1.6M combinations
-  const len = 4;
+  const len = 6;
   if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
     const arr = new Uint8Array(len);
     crypto.getRandomValues(arr);
@@ -20,7 +21,7 @@ export async function generatePulseId() {
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = randomCode();
     const { data } = await supabase
-      .from('profiles')
+      .from('profile_lookup')
       .select('id')
       .eq('pulse_id', code)
       .maybeSingle();

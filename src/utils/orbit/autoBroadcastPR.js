@@ -52,7 +52,7 @@ export async function autoBroadcastPR(userId, exercise, kg, reps, sets) {
     const notifications = friendIds.map(friendId => ({
       user_id: friendId,
       type:    'new_pr',
-      payload: { signal_id: signal.id, exercise, weight: kg, reps, from_user_id: userId },
+      payload: { signal_id: signal.id, exercise, weight: kg, reps },
     }));
 
     await supabase.from('orbit_notifications').insert(notifications);
